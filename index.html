@@ -1100,14 +1100,6 @@ function answerHtml(entry) {
   let html = '<span class="tag ' + cls + '">' + entry.category + "</span>\n" + esc(entry.answer).replace(/\n/g, "<br>").replace(/\[img:([^\]]+)\]/g, function(m, src) {
     return '<img class="answer-img" src="' + src + '" onclick="window.open(\'' + src + '\')" loading="lazy">';
   });
-  if (entry.related && entry.related.length) {
-    const items = entry.related
-      .map(rid => knowledgeBase.find(e => e.id === rid))
-      .filter(Boolean)
-      .map(e => '<span class="related-item" onclick="askById(' + e.id + ')">↳ ' + esc(e.question) + "</span>")
-      .join("");
-    if (items) html += '<div class="related"><div class="related-title">相关问题：</div>' + items + "</div>";
-  }
   return html;
 }
 
@@ -1140,18 +1132,6 @@ function send() {
 
     if (best && best.score >= THRESHOLD) {
       let html = answerHtml(best.entry);
-      // 报错解答类问题只需精准匹配一条，不补充其他分类答案；也不将报错解答作为补充答案展示
-      // solo 标记的条目也只展示自身答案，不补充其他分类
-      if (best.entry.category !== "报错解答" && !best.entry.solo) {
-        // 查找第二条不同分类的高分结果（最多展示2条），跳过报错解答
-        for (let i = 1; i < results.length; i++) {
-          const r = results[i];
-          if (r.score >= THRESHOLD && r.entry.category !== best.entry.category && r.entry.category !== "报错解答") {
-            html += '<hr class="answer-divider"><div class="related-title">以下是「' + esc(r.entry.category) + '」中的相关回答：</div>' + answerHtml(r.entry);
-            break;
-          }
-        }
-      }
       addMsg("bot", html);
     } else {
       // 低置信度：列出最接近的几条供点选
