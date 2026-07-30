@@ -1092,12 +1092,7 @@ function clearTyping() {
 }
 
 function answerHtml(entry) {
-  let cls = "q";
-  if (entry.category === "报错解答") cls = "e";
-  else if (entry.category === "调研表填写答疑") cls = "r";
-  else if (entry.category === "微信相关问题") cls = "w";
-  else if (entry.category === "支付宝相关问题") cls = "q";
-  let html = '<span class="tag ' + cls + '">' + entry.category + "</span>\n" + esc(entry.answer).replace(/\n/g, "<br>").replace(/\[img:([^\]]+)\]/g, function(m, src) {
+  let html = esc(entry.answer).replace(/\n/g, "<br>").replace(/\[img:([^\]]+)\]/g, function(m, src) {
     return '<img class="answer-img" src="' + src + '" onclick="window.open(\'' + src + '\')" loading="lazy">';
   });
   return html;
