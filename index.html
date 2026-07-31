@@ -1,1261 +1,689 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta http-equiv="Pragma" content="no-cache">
-<meta http-equiv="Expires" content="0">
-<title>商户智能问答机器人</title>
-<style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  :root {
-    --bg: #f4f5f7;
-    --panel: #ffffff;
-    --primary: #2b6cff;
-    --primary-soft: #eaf1ff;
-    --text: #1f2329;
-    --text-sub: #646a73;
-    --border: #e5e6eb;
-    --bot-bg: #f7f8fa;
-    --me-bg: #2b6cff;
-    --me-text: #ffffff;
-    --tag-q: #e8f3ff;
-    --tag-q-text: #3370ff;
-    --tag-e: #fff3e0;
-    --tag-e-text: #e8740f;
-    --tag-r: #f3eaff;
-    --tag-r-text: #7c3aed;
-    --tag-w: #e6f7ed;
-    --tag-w-text: #1a9d5f;
-    --tag-x: #fce4ec;
-    --tag-x-text: #d81b60;
-    --radius: 12px;
-  }
-  body {
-    font-family: -apple-system, "Segoe UI", "Microsoft YaHei", "PingFang SC", sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-  }
-  /* 顶栏 */
-  header {
-    background: var(--panel);
-    border-bottom: 1px solid var(--border);
-    padding: 14px 20px;
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    flex-shrink: 0;
-  }
-  .avatar {
-    width: 40px; height: 40px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #2b6cff, #6aa0ff);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 20px;
-  }
-  .header-info h1 { font-size: 16px; font-weight: 600; }
-  .header-info p { font-size: 12px; color: var(--text-sub); }
-  .header-actions { margin-left: auto; display: flex; gap: 8px; }
-  .btn {
-    border: 1px solid var(--border);
-    background: var(--panel);
-    color: var(--text-sub);
-    padding: 6px 12px;
-    border-radius: 8px;
-    font-size: 13px;
-    cursor: pointer;
-    transition: all .15s;
-  }
-  .btn:hover { border-color: var(--primary); color: var(--primary); }
-
-  /* 主体 */
-  main { flex: 1; display: flex; overflow: hidden; }
-  .chat-wrap { flex: 1; display: flex; flex-direction: column; min-width: 0; }
-
-  /* 消息区 */
-  .messages {
-    flex: 1;
-    overflow-y: auto;
-    padding: 20px;
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-  }
-  .msg { display: flex; gap: 10px; max-width: 78%; }
-  .msg.me { align-self: flex-end; flex-direction: row-reverse; }
-  .msg .bubble {
-    padding: 11px 14px;
-    border-radius: var(--radius);
-    font-size: 14px;
-    line-height: 1.6;
-    white-space: pre-wrap;
-    word-break: break-word;
-  }
-  .msg.bot .bubble { background: var(--bot-bg); border-top-left-radius: 4px; }
-  .msg.me .bubble { background: var(--me-bg); color: var(--me-text); border-top-right-radius: 4px; }
-  .answer-img {
-    max-width: 100%;
-    border-radius: 8px;
-    margin: 8px 0;
-    cursor: pointer;
-    border: 1px solid rgba(0,0,0,0.08);
-    display: block;
-  }
-  .msg .mini-avatar {
-    width: 30px; height: 30px; border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 15px; flex-shrink: 0;
-  }
-  .msg.bot .mini-avatar { background: var(--primary-soft); }
-  .msg.me .mini-avatar { background: #e5e6eb; }
-  .tag {
-    display: inline-block;
-    font-size: 11px;
-    padding: 2px 7px;
-    border-radius: 4px;
-    margin-bottom: 6px;
-    font-weight: 500;
-  }
-  .tag.q { background: var(--tag-q); color: var(--tag-q-text); }
-  .tag.e { background: var(--tag-e); color: var(--tag-e-text); }
-  .tag.r { background: var(--tag-r); color: var(--tag-r-text); }
-  .tag.w { background: var(--tag-w); color: var(--tag-w-text); }
-  .tag.x { background: var(--tag-x); color: var(--tag-x-text); }
-  .related {
-    margin-top: 10px;
-    padding-top: 10px;
-    border-top: 1px dashed var(--border);
-  }
-  .related-title { font-size: 12px; color: var(--text-sub); margin-bottom: 6px; }
-  .answer-divider { border: none; border-top: 1px dashed var(--border); margin: 14px 0 10px; }
-  .related-item {
-    display: block;
-    font-size: 13px;
-    color: var(--primary);
-    cursor: pointer;
-    padding: 3px 0;
-  }
-  .related-item:hover { text-decoration: underline; }
-  .typing span {
-    display: inline-block;
-    width: 7px; height: 7px;
-    background: #b0b3bb;
-    border-radius: 50%;
-    margin: 0 1px;
-    animation: blink 1.2s infinite;
-  }
-  .typing span:nth-child(2) { animation-delay: .2s; }
-  .typing span:nth-child(3) { animation-delay: .4s; }
-  @keyframes blink { 0%,60%,100%{opacity:.3} 30%{opacity:1} }
-
-  /* 快捷问题 */
-  .chips {
-    padding: 10px 16px;
-    display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    border-top: 1px solid var(--border);
-    background: var(--panel);
-  }
-  .chip {
-    background: var(--primary-soft);
-    color: var(--primary);
-    border: none;
-    padding: 6px 12px;
-    border-radius: 16px;
-    font-size: 13px;
-    cursor: pointer;
-    transition: all .15s;
-  }
-  .chip:hover { background: #dbe7ff; }
-
-  /* 输入区 */
-  .input-bar {
-    padding: 12px 16px;
-    border-top: 1px solid var(--border);
-    background: var(--panel);
-    display: flex;
-    gap: 10px;
-    flex-shrink: 0;
-  }
-  .input-bar input {
-    flex: 1;
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 10px 14px;
-    font-size: 14px;
-    outline: none;
-    transition: border .15s;
-  }
-  .input-bar input:focus { border-color: var(--primary); }
-  .send-btn {
-    background: var(--primary);
-    color: #fff;
-    border: none;
-    border-radius: 10px;
-    padding: 0 20px;
-    font-size: 14px;
-    cursor: pointer;
-    transition: opacity .15s;
-  }
-  .send-btn:hover { opacity: .9; }
-  .send-btn:disabled { opacity: .5; cursor: not-allowed; }
-
-  /* 侧边知识库面板 */
-  .side {
-    width: 340px;
-    border-left: 1px solid var(--border);
-    background: var(--panel);
-    display: flex;
-    flex-direction: column;
-    flex-shrink: 0;
-  }
-  .side-head {
-    padding: 16px;
-    border-bottom: 1px solid var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-  }
-  .side-head h2 { font-size: 15px; }
-  .side-head .count { font-size: 12px; color: var(--text-sub); }
-  .filter-bar { padding: 10px 16px; display: flex; gap: 8px; }
-  .filter-btn {
-    border: 1px solid var(--border);
-    background: var(--panel);
-    padding: 4px 10px;
-    border-radius: 6px;
-    font-size: 12px;
-    cursor: pointer;
-    color: var(--text-sub);
-  }
-  .filter-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
-  .kb-list { flex: 1; overflow-y: auto; padding: 4px 0; }
-  .kb-item {
-    padding: 12px 16px;
-    border-bottom: 1px solid var(--border);
-    cursor: pointer;
-    transition: background .12s;
-  }
-  .kb-item:hover { background: var(--bg); }
-  .kb-item .ki-q { font-size: 13px; font-weight: 500; margin-bottom: 3px; }
-  .kb-item .ki-a { font-size: 12px; color: var(--text-sub); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-
-  /* 帮助弹层 */
-  .modal-mask {
-    position: fixed; inset: 0;
-    background: rgba(0,0,0,.4);
-    display: none;
-    align-items: center;
-    justify-content: center;
-    z-index: 100;
-  }
-  .modal-mask.show { display: flex; }
-  .modal {
-    background: var(--panel);
-    border-radius: 14px;
-    width: 620px;
-    max-width: 92vw;
-    max-height: 86vh;
-    overflow-y: auto;
-    padding: 24px;
-  }
-  .modal h2 { font-size: 18px; margin-bottom: 14px; }
-  .modal h3 { font-size: 14px; margin: 16px 0 8px; color: var(--primary); }
-  .modal p, .modal li { font-size: 13px; line-height: 1.7; color: var(--text-sub); }
-  .modal ul { padding-left: 18px; margin: 6px 0; }
-  .modal code, .modal pre {
-    background: var(--bg);
-    border-radius: 6px;
-    font-family: "Consolas", "SF Mono", monospace;
-    font-size: 12px;
-  }
-  .modal pre { padding: 12px; overflow-x: auto; margin: 8px 0; }
-  .modal code { padding: 2px 5px; }
-  .modal-close {
-    float: right;
-    cursor: pointer;
-    font-size: 20px;
-    color: var(--text-sub);
-    line-height: 1;
-  }
-  .modal-close:hover { color: var(--text); }
-  .scroll-hint { font-size: 12px; color: var(--primary); margin-top: 10px; text-align: center; }
-
-  /* ===== 移动端响应式 ===== */
-  @media (max-width: 768px) {
-    header { padding: 10px 12px; gap: 8px; }
-    .avatar { width: 34px; height: 34px; font-size: 17px; }
-    .header-info h1 { font-size: 14px; }
-    .header-info p { font-size: 11px; }
-    .btn { padding: 5px 9px; font-size: 12px; }
-
-    .messages { padding: 12px; gap: 10px; }
-    .msg { max-width: 88%; gap: 7px; }
-    .msg .bubble { padding: 9px 12px; font-size: 14px; }
-    .mini-avatar { width: 30px; height: 30px; font-size: 16px; }
-
-    .input-bar { padding: 8px 10px; gap: 8px; }
-    .input-bar textarea { font-size: 15px; padding: 8px 12px; }
-    .send-btn { padding: 0 16px; font-size: 14px; }
-
-    /* 侧边栏变抽屉 */
-    .side {
-      position: fixed;
-      top: 0; right: 0; bottom: 0;
-      width: 85vw; max-width: 340px;
-      z-index: 1000;
-      box-shadow: -4px 0 24px rgba(0,0,0,0.15);
-      transform: translateX(100%);
-      transition: transform .25s ease;
-    }
-    .side.open { transform: translateX(0); }
-    .side-backdrop {
-      display: none;
-      position: fixed; inset: 0;
-      background: rgba(0,0,0,0.3);
-      z-index: 999;
-    }
-    .side-backdrop.show { display: block; }
-
-    .filter-bar { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    .filter-btn { flex-shrink: 0; }
-  }
-</style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>智能问答机器人</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --primary-light: #dbeafe;
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --text: #1e293b;
+            --text-secondary: #64748b;
+            --border: #e2e8f0;
+            --shadow: 0 1px 3px rgba(0,0,0,0.08);
+            --shadow-lg: 0 10px 25px rgba(0,0,0,0.1);
+        }
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #0f172a;
+                --card: #1e293b;
+                --text: #f1f5f9;
+                --text-secondary: #94a3b8;
+                --border: #334155;
+                --primary-light: rgba(37,99,235,0.2);
+                --shadow: 0 1px 3px rgba(0,0,0,0.3);
+                --shadow-lg: 0 10px 25px rgba(0,0,0,0.4);
+            }
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Microsoft YaHei", sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, #3b82f6 100%);
+            color: white;
+            padding: 16px 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 8px rgba(37,99,235,0.3);
+        }
+        .header-inner {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 0 16px;
+        }
+        .header-top {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+        .robot-icon {
+            width: 40px; height: 40px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 22px;
+        }
+        .header h1 { font-size: 20px; font-weight: 600; }
+        .header p { font-size: 13px; opacity: 0.9; }
+        .tabs {
+            display: flex;
+            gap: 6px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+            padding-bottom: 4px;
+        }
+        .tabs::-webkit-scrollbar { display: none; }
+        .tab {
+            flex: 0 0 auto;
+            padding: 8px 16px;
+            border-radius: 20px;
+            background: rgba(255,255,255,0.15);
+            color: white;
+            font-size: 14px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s;
+            border: none;
+            font-weight: 500;
+        }
+        .tab.active { background: white; color: var(--primary); }
+        .tab:hover:not(.active) { background: rgba(255,255,255,0.25); }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px 16px 60px;
+        }
+        .search-box {
+            background: var(--card);
+            border-radius: 16px;
+            padding: 16px;
+            box-shadow: var(--shadow);
+            margin-bottom: 20px;
+            border: 1px solid var(--border);
+        }
+        .search-input-wrap {
+            display: flex;
+            gap: 10px;
+        }
+        .search-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            font-size: 16px;
+            background: var(--bg);
+            color: var(--text);
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .search-input:focus { border-color: var(--primary); }
+        .search-btn {
+            padding: 12px 24px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        .search-btn:hover { background: var(--primary-dark); }
+        .search-btn:active { transform: scale(0.98); }
+        .search-tips {
+            margin-top: 10px;
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+        .current-project {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 16px;
+            font-size: 15px;
+            color: var(--text-secondary);
+        }
+        .current-project .badge {
+            background: var(--primary-light);
+            color: var(--primary);
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 13px;
+        }
+        .result-list { display: flex; flex-direction: column; gap: 16px; }
+        .result-card {
+            background: var(--card);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            transition: transform 0.2s, box-shadow 0.2s;
+            animation: fadeIn 0.3s ease-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .result-card:hover { box-shadow: var(--shadow-lg); }
+        .result-q {
+            font-size: 17px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 12px;
+            display: flex;
+            gap: 8px;
+            align-items: flex-start;
+        }
+        .q-icon {
+            flex: 0 0 24px;
+            width: 24px; height: 24px;
+            background: var(--primary);
+            color: white;
+            border-radius: 6px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 13px; font-weight: 700;
+        }
+        .result-a {
+            color: var(--text-secondary);
+            font-size: 15px;
+            line-height: 1.8;
+            white-space: pre-wrap;
+        }
+        .result-a a { color: var(--primary); word-break: break-all; }
+        .result-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 14px;
+            padding-top: 14px;
+            border-top: 1px solid var(--border);
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+        .score { font-weight: 600; color: var(--primary); }
+        .image-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 10px;
+            margin-top: 14px;
+        }
+        .image-grid img {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 10px;
+            cursor: pointer;
+            border: 1px solid var(--border);
+            transition: transform 0.2s;
+        }
+        .image-grid img:hover { transform: scale(1.03); }
+        .image-grid.single { grid-template-columns: minmax(140px, 320px); }
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-secondary);
+        }
+        .empty-icon { font-size: 56px; margin-bottom: 16px; }
+        .empty-title { font-size: 18px; font-weight: 600; margin-bottom: 8px; color: var(--text); }
+        .suggestion-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            margin-top: 16px;
+        }
+        .suggestion-chip {
+            background: var(--card);
+            border: 1px solid var(--border);
+            padding: 8px 14px;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .suggestion-chip:hover { border-color: var(--primary); color: var(--primary); }
+        .footer {
+            text-align: center;
+            padding: 30px 16px;
+            color: var(--text-secondary);
+            font-size: 13px;
+        }
+        .read-only-notice {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+        }
+        .lightbox {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.92);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .lightbox.active { display: flex; }
+        .lightbox img {
+            max-width: 100%;
+            max-height: 90vh;
+            border-radius: 8px;
+            object-fit: contain;
+        }
+        .lightbox-close {
+            position: absolute;
+            top: 20px; right: 20px;
+            color: white;
+            font-size: 32px;
+            cursor: pointer;
+            width: 44px; height: 44px;
+            display: flex; align-items: center; justify-content: center;
+            background: rgba(255,255,255,0.1);
+            border-radius: 50%;
+        }
+        @media (max-width: 640px) {
+            .header h1 { font-size: 18px; }
+            .header p { font-size: 12px; }
+            .tab { padding: 7px 13px; font-size: 13px; }
+            .container { padding: 14px 12px 40px; }
+            .search-box { padding: 12px; }
+            .search-input { padding: 10px 12px; font-size: 15px; }
+            .search-btn { padding: 10px 16px; font-size: 15px; }
+            .result-card { padding: 16px; }
+            .result-q { font-size: 16px; }
+            .result-a { font-size: 14px; }
+            .image-grid { grid-template-columns: repeat(2, 1fr); }
+            .image-grid.single { grid-template-columns: 1fr; }
+        }
+    </style>
 </head>
 <body>
+    <header class="header">
+        <div class="header-inner">
+            <div class="header-top">
+                <div class="robot-icon">🤖</div>
+                <div>
+                    <h1>智能问答机器人</h1>
+                    <p>商户自助查询 · 严格按照文档内容答复 · 仅支持查看</p>
+                </div>
+            </div>
+            <nav class="tabs" id="tabs" aria-label="项目选择"></nav>
+        </div>
+    </header>
 
-<header>
-  <div class="avatar">🤖</div>
-  <div class="header-info">
-    <h1>商户智能问答助手</h1>
-    <p>在线 · 已加载 <span id="kbCount">0</span> 条知识</p>
-  </div>
-  <div class="header-actions">
-    <button class="btn" onclick="openHelp()">📘 录入说明</button>
-    <button class="btn" onclick="toggleSide()">🗂 知识库</button>
-  </div>
-</header>
+    <main class="container">
+        <div class="search-box">
+            <div class="current-project">
+                当前项目：<span class="badge" id="currentBadge">项目一</span>
+            </div>
+            <div class="search-input-wrap">
+                <input type="text" class="search-input" id="searchInput" placeholder="请输入您的问题，例如：如何修改结算银行卡？" autocomplete="off">
+                <button class="search-btn" id="searchBtn">搜索</button>
+            </div>
+            <div class="search-tips">提示：切换上方项目标签可在不同项目内查找，系统不会跨项目匹配。</div>
+        </div>
 
-<main>
-  <div class="chat-wrap">
-    <div class="messages" id="messages">
-      <div class="msg bot">
-        <div class="mini-avatar">🤖</div>
-        <div class="bubble">你好！我是商户问答助手，可以帮你解答<b>调研表填写答疑</b>、<b>微信相关问题</b>、<b>支付宝相关问题</b>和<b>报错排查</b>。
-直接输入你的问题，或点击下方快捷提问试试 👇</div>
-      </div>
+        <section id="resultArea" aria-live="polite"></section>
+    </main>
+
+    <footer class="footer">
+        <span class="read-only-notice">🔒 只读模式 · 商户仅可查看，不能修改内容</span>
+    </footer>
+
+    <div class="lightbox" id="lightbox">
+        <span class="lightbox-close" id="lightboxClose">&times;</span>
+        <img src="" alt="大图预览" id="lightboxImg">
     </div>
 
-    <div class="chips" id="chips"></div>
-
-    <div class="input-bar">
-      <input type="text" id="input" placeholder="输入商户的问题或报错信息…" autocomplete="off" onkeydown="if(event.key==='Enter')send()">
-      <button class="send-btn" id="sendBtn" onclick="send()">发送</button>
-    </div>
-  </div>
-
-  <div class="side-backdrop" id="sideBackdrop" onclick="toggleSide()"></div>
-  <aside class="side" id="side">
-    <div class="side-head">
-      <h2>知识库</h2>
-      <span class="count" id="sideCount"></span>
-    </div>
-    <div class="filter-bar">
-      <button class="filter-btn active" data-filter="all" onclick="setFilter('all')">全部</button>
-      <button class="filter-btn" data-filter="调研表填写答疑" onclick="setFilter('调研表填写答疑')">调研表填写答疑</button>
-      <button class="filter-btn" data-filter="报错解答" onclick="setFilter('报错解答')">报错解答</button>
-      <button class="filter-btn" data-filter="微信相关问题" onclick="setFilter('微信相关问题')">微信相关问题</button>
-      <button class="filter-btn" data-filter="支付宝相关问题" onclick="setFilter('支付宝相关问题')">支付宝相关问题</button>
-    </div>
-    <div class="kb-list" id="kbList"></div>
-  </aside>
-</main>
-
-<!-- 帮助弹层 -->
-<div class="modal-mask" id="helpMask" onclick="if(event.target===this)closeHelp()">
-  <div class="modal">
-    <span class="modal-close" onclick="closeHelp()">×</span>
-    <h2>📘 如何录入你自己的问答</h2>
-    <p>所有问答都维护在文件顶部的 <code>knowledgeBase</code> 数组里。用记事本或任意编辑器打开本文件，找到 <code>/* ===== 问答知识库（在此录入） ===== */</code> 这一段，照着格式增删即可。</p>
-
-    <h3>每条问答的字段说明</h3>
-    <ul>
-      <li><code>id</code> — 编号，唯一即可。</li>
-      <li><code>category</code> — 分类，填 <code>"调研表填写答疑"</code> / <code>"微信相关问题"</code> / <code>"支付宝相关问题"</code> / <code>"报错解答"</code>（影响侧边栏筛选与标签颜色）。</li>
-      <li><code>question</code> — 标准问法，机器人会拿它和用户输入做匹配。</li>
-      <li><code>keywords</code> — 关键词数组，命中任意一个就加分。尽量把同义词、口语、错误码都列上。</li>
-      <li><code>answer</code> — 回答内容，支持换行。插入图片用 <code>[img:图片文件名]</code>（图片放在同目录下）。</li>
-      <li><code>related</code>（可选）— 关联问答的 id 数组，回答末尾会展示"相关问题"。</li>
-    </ul>
-
-    <h3>示例格式</h3>
-    <pre>{
-  id: 101,
-  category: "报错解答",
-  question: "提示签名错误怎么办？",
-  keywords: ["签名错误", "sign", "签名失败", "401"],
-  answer: "1. 检查 API 密钥是否填写正确；\n2. 确认签名算法为 MD5；\n3. 参数需按字典序排序后再签名。",
-  related: [102]
-}</pre>
-
-    <h3>匹配机制（简单了解）</h3>
-    <ul>
-      <li>同时计算「关键词命中」与「整句相似度」，综合打分。</li>
-      <li>得分越高越靠前；低于阈值时机器人会列出最接近的几条供用户点选。</li>
-      <li>所以 <code>keywords</code> 写得越全，识别越准。多写几种用户的口语问法。</li>
-    </ul>
-    <p class="scroll-hint">改完保存，刷新网页即可生效 ✅</p>
-  </div>
-</div>
-
-<script>
-/* ============================================================
-   问答知识库（在此录入）
-   - 照着下面格式增删即可
-   - keywords 多写同义词/口语/错误码，识别更准
-   ============================================================ */
-const knowledgeBase = [
-  // ---------- 调研表填写答疑（依据《商户上线调研表-WH2026》） ----------
-  {
-    id: 201,
-    category: "调研表填写答疑",
-    question: "这张调研表是干什么用的？",
-    keywords: ["调研表", "干什么用", "用途", "是什么", "上线调研表", "商户上线", "版本", "wh2026", "干嘛", "干嘛用", "干啥", "用来", "表格", "这张表", "表是"],
-    answer: "这张《商户上线调研表》用于直连微信、支付宝上线时采集商户信息。\n主要含五块：商户基本信息、结算信息（支付宝）、结算信息（微信）、证件资料清单、门店清单。\n填好后提交给对接的销售/上线人员，用于安排上线。",
-    related: [202, 213]
-  },
-  {
-    id: 202,
-    category: "调研表填写答疑",
-    question: "上线产品如何选择？",
-    keywords: ["上线产品", "产品", "扫码点餐", "扫码付", "外卖", "会员", "勾选", "选哪个", "选择产品"],
-    answer: "勾选对应的上线产品：\n• 如仅上线支付宝/微信线下支付，勾选【支付宝扫码付】或【微信扫码付】；\n• 如涉及到公众号或小程序点餐，勾选【支付宝/微信扫码点餐】等。\n注意：上线「微信扫码点餐/外卖」需填小程序 AppID；上线「微信会员」需填公众号 AppID。",
-    related: [210, 201]
-  },
-  {
-    id: 203,
-    category: "调研表填写答疑",
-    question: "是否有支付宝账号？怎么填？",
-    keywords: ["支付宝账号", "是否有支付宝", "个体户支付宝", "邮箱格式", "申请支付宝", "没有支付宝", "怎么填支付宝"],
-    answer: "支付宝账号填写规则：\n• 企业支付宝账号为邮箱格式；\n• 个体工商户支付宝账号为邮箱格式或法人个人手机号格式。\n如有账号：填写账号信息，并提供产品签约和开放平台密钥截图（见「截图如何获取」）。\n如无账号：需申请一个支付宝账号，可参考此文档自行完成注册和实名认证：\nhttps://cshall.alipay.com/enterprise/knowledgeDetail.htm?knowledgeId=201602847673\n注册完成后将支付宝账号填入表格。",
-    related: [204, 212]
-  },
-  {
-    id: 204,
-    category: "调研表填写答疑",
-    question: "产品签约截图和开放平台密钥截图如何获取？",
-    keywords: ["产品签约截图", "密钥截图", "开放平台密钥", "截图怎么弄", "截图获取", "签约管理", "密钥管理", "b.alipay", "open.alipay", "截图"],
-    answer: "可点击表格内链接跳转，或登录对应网址查看后截图，粘贴到对应处：\n• 产品签约截图：登录 B.alipay.com → 账号中心 → 签约管理 → 已生效，截图「当面付/JSAPI」产品状态；\n• 开放平台密钥截图：登录 Open.alipay.com → 右上角头像下「账户中心」→ 左侧「密钥管理」→「应用密钥管理」，截全图。",
-    related: [203]
-  },
-  {
-    id: 205,
-    category: "调研表填写答疑",
-    question: "如已有微信账号，是否不需申请？",
-    keywords: ["已有微信", "微信账号", "重新申请", "原微信账号", "旧微信账号", "能不能用原来的", "微信申请", "不用申请", "原来的微信"],
-    answer: "原微信账号不能使用，需要重新申请账号。",
-    related: [206]
-  },
-  {
-    id: 206,
-    category: "调研表填写答疑",
-    question: "企业结算可以选择进私户吗？",
-    keywords: ["进私户", "进个人账户", "企业结算", "对公", "营业执照企业", "个体工商户", "私户", "法人个人账户", "进私户吗"],
-    answer: "以营业执照主体为准：\n• 营业执照是企业：必须进对公账户，不能进私户；\n• 个体工商户：可选择进对公账户或法人个人银行账户。",
-    related: [207]
-  },
-  {
-    id: 207,
-    category: "调研表填写答疑",
-    question: "开户银行及银行账号怎么填？",
-    keywords: ["开户银行", "支行", "银行账号", "对公", "开户行"],
-    answer: "结算银行信息及账号需准确：\n• 开户行填写须精准到「***支行」（如「中国工商银行深圳高新园支行」），不能只填总行；\n• 银行账号填对公结算账户。\n注意：企业主体必须对公，个体户可进对公或法人个人账户。",
-    related: []
-  },
-  {
-    id: 208,
-    category: "调研表填写答疑",
-    question: "超管怎么填写？为什么要填超管信息？",
-    keywords: ["超管", "超级管理员", "财务负责人", "超管怎么填", "超管姓名", "身份证号", "超管是什么", "超管干嘛", "为什么填超管", "超管信息"],
-    answer: "超级管理员建议填写公司财务负责人，主要职责：\n1. 接收开户信息及完成账号签约流程；\n2. 进行商户号的日常操作及资金管理。\n需将超管的姓名、身份证号、手机号和邮箱填写完善。",
-    related: [211, 209]
-  },
-  {
-    id: 209,
-    category: "调研表填写答疑",
-    question: "调研表中的客服电话必须填写吗？",
-    keywords: ["调研表", "客服电话", "客服"],
-    answer: "必须填写。客服电话将显示在微信支付账单界面，方便客人联系商家。\n• 可留手机号或座机号；\n• 座机号需加区号。",
-    related: [208]
-  },
-  {
-    id: 210,
-    category: "调研表填写答疑",
-    question: "公众号、小程序信息必须填写吗？",
-    keywords: ["公众号", "小程序", "appid", "开发者id", "公众号信息", "小程序信息", "必须填吗", "wx开头", "微信会员", "扫码点餐", "外卖", "公众号必填"],
-    answer: "按上线产品区分：\n• 仅上线微信支付：可不填公众号/小程序信息；\n• 上线微信会员：需填写公众号信息，包括公众号昵称和开发者ID（WX开头的一串字符）。查看路径：mp.weixin.qq.com → 开发 → 基本配置 → 公众号开发信息；\n• 上线扫码点餐/外卖：需填写小程序信息，包括小程序昵称和开发者ID（WX开头的一串字符）。查看路径：mp.weixin.qq.com → 左下角头像处 → 账号设置 → 账号信息。\n表内对应位置有「点击快速跳转」链接。",
-    related: [202]
-  },
-  {
-    id: 211,
-    category: "调研表填写答疑",
-    question: "证件资料有什么要求？",
-    keywords: ["资料", "清单", "准备什么", "需要什么", "证件", "材料", "要哪些", "开户许可证", "有效期", "公章", "门头照", "证件照", "红章", "扫描件", "证件要求"],
-    answer: "证件资料要求：\n1. 所有证件资料有效期应大于 3 个月；\n2. 要求原件扫描件或照片，如复印件需加盖红色企业公章；\n3. 所有证件需露出四边四角；\n4. 公章或水印不能覆盖到重要信息（如名字、有效期、证件号码等）；\n5. 超管为非法人时，需提供超管的身份证正、反面；\n6. 门头照需含品牌名（为实景图，不能是效果图或 P 图）; \n7.如需备注用途，需带有“微信支付”字样，如【仅用于微信支付申请使用】。",
-    related: [208, 212]
-  },
-  {
-    id: 212,
-    category: "调研表填写答疑",
-    question: "门店信息的填写要求？",
-    keywords: ["门店信息", "门店地址", "门店编号", "门店名称", "门店电话", "门店清单", "门牌号", "pos编号", "联系电话", "门店填写"],
-    answer: "门店信息填写要求：\n1. 门店编号：需填写 POS 收银系统内的编号，且不能重复；也可自定义门店编号，要求 6 位纯数字或字母+数字，不以 0 开头；\n2. 门店联系电话：如固话需加区号；\n3. 门店地址：需详细到「**区**号」（精确到门牌号）。",
-    related: [213]
-  },
-  {
-    id: 213,
-    category: "调研表填写答疑",
-    question: "商户基础信息如何填写？",
-    keywords: ["商户全称", "上线门店数", "收银系统", "收银", "基本信息", "销售", "门店数", "全称", "infrasys", "正品贵德", "现化", "pos", "填什么", "怎么填", "基础信息"],
-    answer: "商户基础信息填写：\n• 商户全称：填写此次结算到银行账户主体对应的营业执照名称；\n• 上线门店数：开通支付的门店/营业点数；\n• 收银系统：现化 Infrasys 或 正品贵德。",
-    related: [201, 212]
-  },
-
-  // ---------- 报错解答 ----------
-  {
-    id: 101,
-    category: "报错解答",
-    question: "微信报错提示「交易停滞」怎么办？",
-    keywords: ["交易停滞", "交易停摆", "商户异常交易通知", "信用卡收款功能", "调整收款额度", "关闭信用卡收款", "商户管理记录", "违约记录", "申请解除限制", "风险处理", "交易停滞处理", "交易异常通知"],
-    answer: "1、商户可通过微信支付商户平台--【账户中心】--【违约记录】--【商户管理记录】--【交易停滞】--【申请解除限制】根据页面提示进行申诉，并在7个工作日内留意审核结果；\n2、可通过【微信支付商家助手】小程序--【风险处理】--【交易停滞】进行申诉，并在7个工作内留意审核果。\n[img:transaction-stalled.png]",
-    related: []
-  },
-  {
-    id: 102,
-    category: "报错解答",
-    question: "微信报错提示「此商户的收款功能已被限制，暂无法支付」怎么办？",
-    keywords: ["收款功能被限制", "暂无法支付", "限制支付功能", "关闭支付权限", "关闭支付", "支付权限", "长期无交易", "无交易商户未确认开户意愿", "确认商户身份", "确认开户身份", "违约处理详情", "功能限制记录", "风险处理", "商家助手", "支付失败", "收银受限"],
-    answer: "原因：因长期无交易，交易时系统提示其被限制支付功能。\n解决方法：超管通过【微信支付商家助手】公众号，点击【我的商家】，或小程序搜索【微信支付商家助手】点击【风险处理】--【功能限制记录】--【无交易商户未确认开户意愿】--【违约处理详情】--【确认开户身份】。微信支付后台会发起商户身份信息核实流程，审核通过后，便可解脱无交易的处罚。\n[img:err-pay-restricted.png]",
-    related: []
-  },
-  {
-    id: 103,
-    category: "报错解答",
-    question: "微信报错「Failed(sub_mch_id与sub_appid不匹配|INVALID_REQUEST)」怎么办？",
-    keywords: ["sub_mch_id与sub_appid不匹配", "INVALID_REQUEST", "主体不一致", "公众号主体", "小程序主体", "服务商模式账号关联", "代关联商户号", "sub_mch_id", "sub_appid", "服务商模式"],
-    answer: "原因：公众号/小程序主体与商户号主体不一致。\n解决方法：先确认是否已将正确的公众号/小程序名称和APPID提供给O2O部门进行绑定，如已绑定按下列流程操作：\n1、超管登录微信商户平台（https://pay.weixin.qq.com），同时打开网页（https://pay.weixin.qq.com/index.php/extend/pay_setting/mch#/mchlist），进入【服务商模式账号关联】-点击【发起】>-【确定】，按照提示完成操作；\n2、公众号/小程序超管登录公众平台（https://mp.weixin.qq.com）-【支付与交易】--【微信支付】--【代关联商户号（服务商模式）】--【确认】。\n[img:err-submchid-mismatch.png]",
-    related: []
-  },
-  {
-    id: 104,
-    category: "报错解答",
-    question: "支付宝渠道报错「应用未上线」怎么办？",
-    keywords: ["应用未上线", "支付宝应用未上线", "新建应用", "应用未通过审核", "开放平台", "重新提交审核", "open.alipay.com", "alipay应用未上线"],
-    answer: "原因：新建应用未通过审核。\n解决方法：超管登录支付宝开放平台（open.alipay.com)--【控制台】--查看新建应用是否审核通过，显示已上线。如未通过查看原因重新提交审核。\n[img:err-app-not-online.jpg]",
-    related: []
-  },
-  {
-    id: 105,
-    category: "报错解答",
-    question: "支付宝渠道报错「Failed商户协议状态非正常状态」怎么办？",
-    keywords: ["商户协议状态非正常", "协议状态异常", "当面付", "JSAPI", "未开通", "状态异常", "消息中心", "代办事项", "b.alipay.com", "协议未开通", "支付宝协议"],
-    answer: "原因：1）当面付/JSAPI未开通或状态异常；2）该支付宝账户长时间没有使用。\n解决方法：\n1）超管登录支付宝商家平台（b.alipay.com)--【产品中心】--查看【当面付】/【JSAPI】是否开通且正常状态；\n2）超管登录支付宝商家平台（b.alipay.com）右上角消息中心，查看相关通知，并进行恢复；没有相关通知，可通过以下链接进行激活：\n电脑端：https://rccust.alipay.com/disposal/reactive?taskCode=ace3a0703aa550add54a8296f9963978\n手机端：https://render.alipay.com/p/w/mix-h5/inactive-merchants.html?taskCode=ace3a0703aa550add54a8296f9963978\n[img:err-agreement-abnormal.png]",
-    related: []
-  },
-  {
-    id: 106,
-    category: "报错解答",
-    question: "静态二维码支付宝付款时，报「ISV权限不足」怎么办？",
-    keywords: ["静态二维码", "ISV权限不足", "场景合规", "场景定制", "O2O部门", "ISV权限", "权限不足", "静态码"],
-    answer: "解决方法：联系O2O部门，将【场景合规】改成【场景定制】。\n[img:err-isv-permission.png]",
-    related: []
-  },
-  {
-    id: 107,
-    category: "报错解答",
-    question: "石基支付扫码点餐报错「Failed(MCG01100|渠道系统异常)」怎么办？",
-    keywords: ["MCG01100", "渠道系统异常", "石基支付", "扫码点餐", "同主体", "公众号APPID", "小程序APPID", "配置绑定", "石基渠道异常"],
-    answer: "解决方法：提供同主体的公众号/小程序APPID在石基支付后台进行配置绑定。\n[img:err-mcg01100.png]",
-    related: []
-  },
-  {
-    id: 108,
-    category: "报错解答",
-    question: "石基支付报错「Merchant is not opened this channel」怎么办？",
-    keywords: ["Merchant is not opened this channel", "石基支付", "渠道号配置", "渠道未开通", "渠道状态", "channel not opened", "石基渠道", "this channel"],
-    answer: "解决方法：\n1、确认支付渠道号是否配置正确；\n2、确认石基支付平台对应渠道是否已开通且状态正常。\n[img:err-channel-closed.png]",
-    related: []
-  },
-  {
-    id: 109,
-    category: "报错解答",
-    question: "支付宝支付提示「卖家收款受限」怎么办？",
-    keywords: ["卖家收款受限", "卖家收款", "收款受限", "联系卖家处理", "稍后重试", "已通过卖家", "支付宝收款限制", "收款功能受限", "支付受限"],
-    answer: "原因：\n1）账户或交易存在风险（风控拦截）\n解决方法：超管登录支付宝商家平台（b.alipay.com）右上角【消息中心】查看是否有风控限制，根据页面提示，提交申诉材料并等待审核通过；\n2）收款额度达到上限\n解决方法：登录支付宝商家平台（b.alipay.com）或支付宝APP，进入【账号中心】--【签约管理】检查并补全资质凭证，提升收款额度；\n3）资质不全或资质过期\n解决方法：在支付宝APP或商户平台中，进入【账号中心】--【签约管理】，重新补全或更新资质材料，提交审核；\n4）账户状态异常或违规或长时间无交易\n解决方法：支付宝APP--【我的客服】--【账户限制】或【解除限制】入口进行线上申诉；若自动申诉无法解决，或受限时间较长，请拨打支付宝客服电话95188-3或400 758 5858 进行人工核实与申诉。\n[img:err-alipay-payee-restricted.png]",
-    related: []
-  },
-
-  // ---------- 微信相关问题（结算与发票 + 资料修改） ----------
-  {
-    id: 301,
-    category: "微信相关问题",
-    question: "为什么有资金未结算？",
-    keywords: ["未结算", "资金未结算", "没有结算", "没结算", "资金没结算", "钱没到账", "未到账", "不结算", "为什么没结算", "交易资金"],
-    answer: "需满足以下条件，商户的交易资金才会结算，暂不支持将自动结算修改成手动结算。\n1）商户号需完成签约入驻（【商户平台】->【账户中心】->【支付申请】查看是否完成验证和签约）；\n2）达到结算周期后商户的交易资金才会自动结算。（查看方法：进入【商户平台】->【账户中心】->【商户信息】->【结算信息】，可以查看结算周期）\n3）开通了手续费账户，且账户余额需大于100，且足够扣除订单结算手续费。\n4）商户号存在违约情况，请在【账户中心】->【违约记录】核实。",
-    related: [302, 303]
-  },
-  {
-    id: 302,
-    category: "微信相关问题",
-    question: "结算是否会产生手续费，结算周期是多久？",
-    keywords: ["结算手续费", "结算周期", "多久结算", "结算费率", "周期", "结算规则"],
-    answer: "结算按每笔订单金额收取对应的手续费，具体费率及周期根据您申请的经营类目/结算规则决定。",
-    related: [301]
-  },
-  {
-    id: 303,
-    category: "微信相关问题",
-    question: "结算款项到账时间是多久？",
-    keywords: ["到账时间", "多久到账", "结算到账", "提现到账", "款项到账", "几个工作日", "什么时候到"],
-    answer: "自动提现到商户的结算银行账户：自提现之日起3个工作日内留意；手动提现（仅新资金流商户支持）：自提现次日起3个工作内留意到账，具体以银行到账时间为准。",
-    related: [301, 306]
-  },
-  {
-    id: 304,
-    category: "微信相关问题",
-    question: "退款时是否会将手续费退回？",
-    keywords: ["退款", "手续费退回", "退款手续费", "退手续费", "退款扣费", "退款费用"],
-    answer: "退款不收取手续费。",
-    related: [302]
-  },
-  {
-    id: 305,
-    category: "微信相关问题",
-    question: "微信结算支持的账户类型是什么？",
-    keywords: ["账户类型", "银行账号", "结算账户", "对公", "法人账户", "个体户结算", "结算到哪", "结算银行卡"],
-    answer: "个体工商户可选择结算至法人个人账户或对公账户，其余主体仅支持结算到对公账户。",
-    related: []
-  },
-  {
-    id: 306,
-    category: "微信相关问题",
-    question: "提现有哪些方式，如何开通？",
-    keywords: ["提现方式", "自动提现", "手动提现", "如何提现", "开通提现", "怎么提现", "提现", "提现管理"],
-    answer: "分为自动提现和手动提现两种。\n自动提现：超管登录【商户平台】->【产品中心】->【自动提现】，点击“申请开通”；或超管登录【商家助手小程序】->【资金管理】->【提现管理】。\n可点击【产品设置】或【提现管理】设置自动提现规则，开通后次日0点生效。\n手动提现（仅支持新资金流结算模式商户）：路径：交易中心->资金管理->提现/转出->在收款账户选择银行卡，页面会显示当前账户余额，输入需提现的金额，输入登录密码点击提交即可。\n提现查询：交易中心->资金管理->转入/转出记录->业务类型选择提现",
-    related: [303, 310]
-  },
-  {
-    id: 307,
-    category: "微信相关问题",
-    question: "是否可提现至非商户号绑定的银行卡？",
-    keywords: ["非绑定银行卡", "其他银行卡", "提现到别的卡", "换卡提现", "非商户号银行卡", "提现到其他卡", "别的银行卡", "提现到别的银行卡", "别的卡", "是否可提现", "非商户号", "非本商户号", "提现到非绑定", "提现非绑定"],
-    answer: "不可以，微信提现仅支持提现到本商户号绑定的结算银行卡。",
-    related: []
-  },
-  {
-    id: 308,
-    category: "微信相关问题",
-    question: "提现是否收费？",
-    keywords: ["提现收费", "提现手续费", "提现免费", "提现扣费", "提现要钱吗", "提现费用", "提现要手续费", "提现要钱", "提现要手续费吗", "提现收手续费", "提现扣手续费"],
-    answer: "资金提现到银行卡免费，但交易会按单笔订单四舍五入收取手续费。",
-    related: [302, 304]
-  },
-  {
-    id: 309,
-    category: "微信相关问题",
-    question: "微信结算提现失败后资金去哪里了？",
-    keywords: ["提现失败", "资金去哪", "提现失败资金", "失败后钱", "提现不成功", "提现失败怎么办", "钱去哪", "失败钱", "提现失败钱"],
-    answer: "1、即时结算模式：提现失败资金在基本户，商户确认好结算账号无异常以后，手动发起失败资金对应数额的提现；\n2、非即时结算模式：由于结算账号信息有误，请修改结算信息正确并确保可正常入账，再使用电脑打开链接：pay.weixin.qq.com/index.php/core/cashmanage/querycbalance，超管登录对应商户号，将资金全部转出至可用余额，转出后手动提现可用余额内的资金。",
-    related: [306, 307]
-  },
-  {
-    id: 310,
-    category: "微信相关问题",
-    question: "微信支付能否关闭自动提现？",
-    keywords: ["关闭自动提现", "取消自动提现", "关掉提现", "停止自动提现", "不想自动提现", "关闭提现"],
-    answer: "暂不支持关闭自动提现。\n但可通过设置提现周期（按日/按周/按月）或留存额来控制实际提现频率与金额。方法：超管登录【微信支付商家助手】小程序--【资金管理】--【提现管理】进行设置。",
-    related: []
-  },
-  {
-    id: 311,
-    category: "微信相关问题",
-    question: "如何申请手续费发票？",
-    keywords: ["微信发票", "微信手续费发票", "微信申请发票", "微信开发票", "开票", "发票申请", "怎么开发票", "补开发票", "历史发票", "发票信息", "发票配置"],
-    answer: "超管登录商户平台--【账户中心】->【账户设置】->【发票信息】->【发票配置】 ，填写发票信息，可根据实际情况，选择发票类型（增值税专用发票/普通发票）发票介质（纸质版/电子版），提交成功即申请成功，微信会在次月开始按月开票，无需每月提交申请。\n若暂时无需开票，可点击【账户中心】->【账户设置】->【发票信息】，申请暂停/开启。",
-    related: [312, 313, 314]
-  },
-  {
-    id: 312,
-    category: "微信相关问题",
-    question: "如何修改发票信息？",
-    keywords: ["修改发票", "发票信息", "改发票", "发票抬头", "发票地址", "修改抬头", "税号"],
-    answer: "若修改发票类型及收件地址等信息，可点击【账户中心】--【发票信息】-右上角【发票配置】申请修改，若需修改发票票面信息，如地址、抬头、税号等需先在【账户中心】—【商户信息】内申请修改后重新提交发票申请。",
-    related: [311]
-  },
-  {
-    id: 313,
-    category: "微信相关问题",
-    question: "如何补开历史手续费发票？",
-    keywords: ["补开", "历史发票", "补发发票", "之前发票", "补开历史", "补开发票"],
-    answer: "超管登录微信商户平台，点击【账户中心】->【发票信息】->【发票配置】，点击“修改”后，在页面底部勾选“需要补开历史发票”并提交即可。",
-    related: [311, 314]
-  },
-  {
-    id: 314,
-    category: "微信相关问题",
-    question: "开票状态查询方法",
-    keywords: ["开票状态", "发票查询", "查询发票", "发票进度", "发票状态", "开票信息"],
-    answer: "登录【商户平台】->【账户中心】->【发票信息】，可以查询发票开票信息。",
-    related: [311, 313]
-  },
-  {
-    id: 315,
-    category: "微信相关问题",
-    question: "如何查询名下微信商户号的费率及有效期？",
-    keywords: ["查询费率", "费率有效期", "商户号费率", "手续费率", "查看费率", "费率查询", "费率"],
-    answer: "超管【微信支付商家助手】小程序->点击商户名称进入【我的】详情页->点击【商家信息页】->在【费率】一栏，即可查看当前手续费率。",
-    related: []
-  },
-  {
-    id: 316,
-    category: "微信相关问题",
-    question: "微信支持多长时间内的订单退款？",
-    keywords: ["订单退款", "多长时间退款", "退款时间", "退款期限", "多久内退款", "退款时效", "一年内退款", "退款多久", "多久的订单退款"],
-    answer: "目前支持一年内的交易订单进行退款。",
-    related: [317, 318]
-  },
-  {
-    id: 317,
-    category: "微信相关问题",
-    question: "退款是否收取手续费？",
-    keywords: ["退款手续费", "退款费用", "退款收费", "退款扣费", "退款收手续费", "退款是否收费", "退款要不要钱"],
-    answer: "退款不收取手续费。",
-    related: [316, 318]
-  },
-  {
-    id: 318,
-    category: "微信相关问题",
-    question: "为什么退款一直不成功？",
-    keywords: ["退款不成功", "退款失败", "退款一直不成功", "退款退不了", "退款异常", "交易资金不足", "可用余额不足", "退款待审核", "退款驳回", "退款失败原因", "退款状态", "为什么退款不成功", "退款一直失败"],
-    answer: "1）退款状态为“交易资金不足”：\n由于选择了交易未结算资金进行退款，资金不足无法完成退款。需等待新的订单生成，交易资金在结算之前大于退款金额系统自动执行退款，或充值之后选择余额退款。\n2）退款状态为“可用余额不足”：\n由于选择了可用余额退款，余额不足无法完成退款。需在现金管理内进行充值，充值成功到账后再次手动操作点击可用余额退款。\n3）退款状态为“退款异常”：\n当用户使用银行卡支付时，微信支付原路退款到银行卡，当银行卡状态不正常或银行卡错误时，微信支付会优先转退用户微信零钱，当用户微信零钱也注销，才会转入“退款异常”状态。此时可选择“其它方式退款”，手动录入用户的银行信息完成退款。\n4）退款状态为“待审核”：\n说明商户配置了退款审核流程，联系审核人登录商户平台审核通过。审核人登录商户平台，点击【账户中心】->【待审核任务】->选择流程类型->【退款审核】,通过审核即可。\n有审核流的退款单，自发起退款申请后14天内未审核，系统将自动驳回，如有需要，商户可再次发起退款申请。",
-    related: [316, 317, 319]
-  },
-  {
-    id: 319,
-    category: "微信相关问题",
-    question: "可用余额如何充值？",
-    keywords: ["可用余额充值", "余额充值", "充值", "怎么充值", "余额转入", "充值方式", "可用余额", "充值转入", "网银充值", "扫码充值"],
-    answer: "登录商户平台，点击【交易中心】->【资金管理】->【充值/转入】\n支持充值方式：个人网银支付、企业网银支付、扫码充值；",
-    related: [318]
-  },
-
-  // ---------- （原微信资料修改，已合并至微信相关问题） ----------
-  {
-    id: 401,
-    category: "微信相关问题",
-    question: "如何修改结算银行账户？",
-    keywords: ["修改银行账号", "结算银行账户", "修改账户", "改银行卡", "换银行卡", "怎么改银行卡", "修改银行卡"],
-    answer: "【商户平台】\n1、超级管理员登录商户平台（https://pay.weixin.qq.com），点击【账户中心 -> 银行结算账户 -> 修改账户】，若审核失败可点击查看详情，修改后重新提交；\n2、点击修改账户，填写新的账户信息；若结算账户户名和商户号最新的主体名称不一致、或户名中有括号需要修改全半角，可以点击账户户名旁的'编辑'进行修改、确认无误后点击'保存'；\n3、点击提交后，耐心等待1-5个工作日审核。\n\n【商家助手小程序】\n1、先关注商家助手小程序，登录微信【发现】->【小程序】-> 搜索小程序【微信支付商家助手】；\n2、再使用超级管理员权限登录商家助手小程序，点击公司名称 ->【结算银行账户】；\n3、进行安全验证，请输入正确的操作密码；\n4、点击修改账户，填写新的账户信息；若结算账户户名和商户号最新的主体名称不一致、或户名中有括号需要修改全半角，可以点击账户户名进行修改；\n5、提交成功，等待审核结果，预计1-5个工作日。",
-    related: [402, 405]
-  },
-  {
-    id: 402,
-    category: "微信相关问题",
-    question: "如何修改公司名称？",
-    keywords: ["公司名称", "修改公司名称", "主体名称", "更名", "改公司名", "改名", "主体更名", "公司改名", "公司改名怎么办", "改名称", "名称修改"],
-    answer: "公司名称是该商户的主体名称，需与颁证单位公示信息保持一致，若已在颁证单位（如工商局）进行更名，可登录商户平台（https://pay.weixin.qq.com）申请修改主体，步骤如下：\n1、登录商户平台，点击【账户中心】->【商户信息】->【经营证件信息】点击修改；\n2、填写主体信息、法人信息；\n3、保存--确认提交，等待审核约3~5个工作日；\n4、若审核驳回，点击修改查看驳回原因，调整后重新提交审核。",
-    related: [401, 403]
-  },
-  {
-    id: 403,
-    category: "微信相关问题",
-    question: "如何在微信后台修改/更新营业执照证件资料？",
-    keywords: ["修改营业执照", "经营证件", "换执照", "更新营业执照", "改营业执照", "营业执照过期", "过期了", "换营业执照", "执照到期", "更新执照", "执照修改"],
-    answer: "超级管理员登录微信支付商户平台（https://pay.weixin.qq.com/）->【账户中心】->【商户信息】->【经营证件信息】->【修改】->上传最新的营业执照，确认并提交。",
-    related: []
-  },
-  {
-    id: 404,
-    category: "微信相关问题",
-    question: "如何修改客服电话？",
-    keywords: ["修改客服电话", "改客服电话", "客服号码", "改电话", "客服电话怎么改", "电话修改", "号码修改", "更改客服电话"],
-    answer: "超级管理员登录微信支付商户平台（https://pay.weixin.qq.com/）->【账户中心】->【商户信息】->【经营信息】->【修改】，找到客服电话信息，点击【更改】，转入新的客服电话，点击【号码验证】，系统会致电给新的客服电话，请注意接听，并按语音提示核实修改，商户平台会出现弹窗，提示修改成功。",
-    related: []
-  },
-  {
-    id: 405,
-    category: "微信相关问题",
-    question: "如何修改法人证件？",
-    keywords: ["法人证件", "修改法人证件", "法人身份证", "受益人信息", "改法人", "法人信息", "身份证照片"],
-    answer: "超级管理员登录微信支付商户平台（https://pay.weixin.qq.com/）->【账户中心】->【商户信息】->【经营证件信息】->【修改】，找到受益人信息，上传新的身份证正、反照片，核实信息后，点击【保存并下一步】提交修改。",
-    related: []
-  },
-  {
-    id: 406,
-    category: "微信相关问题",
-    question: "如何修改超级管理员信息？",
-    keywords: ["超级管理员", "修改超管", "超管离职", "超管失联", "旧超管", "更换超管", "超管变更"],
-    answer: "超级管理员即商户号的联系人，拥有商户号的最高管理权限，会接收平台重要通知并可进行资金操作。\n\n一、旧超管仍可以登录商户平台：\n1、【原超级管理员】登录PC端微信支付商户平台（pay.weixin.qq.com）-> 账户中心 -> 商户信息 -> 点击'超级管理员信息'后的'修改'；\n2、点击【获取小程序】，请【新超级管理员】扫码确认新超管信息；\n3、新超管扫码后，点击【继续填写】，可提交新超管的证件照片、联系电话、联系邮箱等信息，提交时需新超管本人刷脸验证，验证完成后新超管信息提交成功；\n4、新超管提交后，原超管将收到微信支付商家助手的进展通知，此时，原超管可登录商户平台确认新超管信息，确认信息后点【下一步】，进入账户验证环节；\n5、若新超管不是法人，需通过上行打款或法人扫码验证的方式完成账户验证，验证通过后平台将在3-5个工作日审核，审核通过后超管修改完成。若新超管是法人，则账户验证直接通过，等待平台审核即可。\n\n二、原超级管理员已离职或失联，无法登录商户平台：\n可点击链接：https://pay.weixin.qq.com/static/help_guide/retrieve_mchnum.shtml ，按照指引完成超级管理员的变更。",
-    related: []
-  },
-  {
-    id: 407,
-    category: "微信相关问题",
-    question: "如何修改商家简称？",
-    keywords: ["商家简称", "修改商家简称", "简称", "改简称", "商户简称", "经营信息"],
-    answer: "超级管理员可通过商户平台/商家助手小程序完成：\n\n【商户平台】\n超管登录微信支付商户平台（https://pay.weixin.qq.com/）->【账户中心】->【账户设置】->【商户信息】->【经营信息】->【修改】，录入新的商家简称，点击【提交修改申请】等待审核。\n\n【商家助手小程序】\n超管登录微信支付商家助手小程序，点击顶部【商户名称】进入【我的】页面，进入后点击顶部【商户名称】进入【商家信息】页面，点击【商家简称】，录入新的商家简称，点击【提交修改申请】等待审核。",
-    related: [404]
-  },
-  {
-    id: 408,
-    category: "微信相关问题",
-    question: "如何修改受益人？",
-    keywords: ["受益人", "修改受益人", "受益所有人", "改受益人", "股东", "实际控制人", "添加受益人"],
-    answer: "受益所有人一般是指最终拥有、实际控制商户主体，或享有商户主体最终收益的自然人。对于股权结构简单的公司，通常持有25%以上股权的自然人股东需要作为受益所有人备案。\n\n【商户平台】\n登录【pay.weixin.qq.com】->点击菜单栏【账户中心】->【商户信息】->【受益人信息】->【修改】，填写受益人信息->【保存并下一步】->【确认提交】。\n\n【商家助手小程序】\n超管登录【微信支付商家助手】->点击顶部【商户名称】，进入【我的】->【商户名称】->【商家信息】->【信息详情】->【法人及受益人】，可删除受益人，点击删除图标，确认删除。点击【添加受益人】可添加新的受益人，添加上限为4人，提交新受益人证件照片，修改完成后，点击【提交】，审核通过后生效。",
-    related: [405]
-  },
-  {
-    id: 409,
-    category: "微信相关问题",
-    question: "超管无法收到短信验证怎么办？",
-    keywords: ["短信验证", "收不到短信", "验证码", "短信", "收不到验证码", "超管短信", "手机号错误"],
-    answer: "【手机号错误】\n1、如本账号为超管，可登录商户平台 - 账户中心 - 个人信息 - 联系手机，点击修改，输入新联系手机及验证码，通过安全验证即可修改成功。\n2、如本账号为员工账号，可找超级管理员登录平台，在 账户中心 - 员工账号管理 - 员工列表，本账号后点击修改信息，填入新的信息后通过验证即可修改成功。\n\n【手机号正确】\n1、请检查手机是否有安全应用拦截及过滤短信，可在拦截短信中，依据关键词'微信支付'查找。\n2、请确认手机内存是否已满，若已满，请先清除旧短信或不常用的应用。",
-    related: []
-  },
-  {
-    id: 410,
-    category: "微信相关问题",
-    question: "如何修改超级管理员邮箱？",
-    keywords: ["超管邮箱", "修改邮箱", "管理员邮箱", "改邮箱", "联系邮箱", "邮箱修改", "超管邮箱怎么改", "改超管邮箱", "更改邮箱"],
-    answer: "超管登录微信支付商户平台（pay.weixin.qq.com）-> 账户中心 -> 个人信息 -> 超级管理员信息，在对应信息后点击'修改'。",
-    related: []
-  },
-  {
-    id: 411,
-    category: "微信相关问题",
-    question: "如何修改超级管理员手机号？",
-    keywords: ["超管手机号", "修改手机号", "管理员手机号", "改手机号", "联系电话", "联系手机", "手机号修改"],
-    answer: "超管登录微信支付商户平台（pay.weixin.qq.com）-> 账户中心 -> 个人信息 -> 超级管理员信息，在对应信息后点击'修改'，按页面提示填写新联系电话后，完成超管姓名验证与刷脸验证即可修改成功。",
-    related: []
-  },
-  {
-    id: 412,
-    category: "微信相关问题",
-    question: "如何添加/创建微信员工账号？",
-    keywords: ["员工账号", "添加员工", "创建员工", "新增账号", "员工管理", "添加员工账号", "员工"],
-    answer: "由超管根据不同的权限设置，添加/创建员工账号：\n\n【商户平台】\n1、超管登录商户平台，点击【账户中心】->【员工账号管理】可选择对应的角色配置权限后点击'新增账号'；\n2、点击【新增账号】为员工设置登录账号名、微信号（必须关注'微信支付商家助手'公众号）、员工姓名、联系手机、联系邮箱，配置对应角色后提交。超管输入操作密码即可添加成功。\n\n【商家助手小程序】\n超管进入【微信支付商家助手】小程序->【员工管理】->【添加员工】并向员工发送添加邀请。员工收到邀请后，填写员工账号、姓名、联系电话并提交，提交成功后由【微信支付商家助手】公众号完成审批。",
-    related: [413]
-  },
-  {
-    id: 413,
-    category: "微信相关问题",
-    question: "如何解除/绑定管理员和员工微信号？",
-    keywords: ["解除绑定", "绑定微信号", "换微信号", "解绑", "重新绑定", "管理员微信号", "员工微信号", "账号信息"],
-    answer: "1、更换绑定：进入【商户平台】，点击【账户中心】->【个人设置】->【个人信息】->【账号信息】，点击微信号的更换绑定即可完成修改。\n2、解除绑定：进入【商户平台】，点击【账户中心】->【账户设置】->【员工账号管理】，选择员工列表，并解除绑定。",
-    related: [412]
-  },
-
-  // ---------- 支付宝相关问题 ----------
-  {
-    id: 501,
-    category: "支付宝相关问题",
-    question: "如何注册支付宝账户？",
-    keywords: ["注册支付宝", "注册账户", "支付宝注册", "实名认证", "开通支付宝", "支付宝开户", "注册", "申请支付宝"],
-    answer: "参考官方文档，自行完成支付宝账户的注册和实名认证流程，步骤如下：\nhttps://cshall.alipay.com/enterprise/knowledgeDetail.htm?knowledgeId=201602847673",
-    related: [502]
-  },
-  {
-    id: 502,
-    category: "支付宝相关问题",
-    question: "支付宝如何创建应用？",
-    keywords: ["创建应用", "支付宝应用", "开放平台", "网页应用", "移动应用", "创建网页应用", "新建应用", "应用创建"],
-    answer: "登录开放平台（open.alipay.com）--【控制台】--【网页/移动应用】--【创建网页/移动应用】--输入自定义名称名称、商家账号、图标--选择【网页应用】--【立即创建】",
-    related: [501]
-  },
-  {
-    id: 503,
-    category: "支付宝相关问题",
-    question: "企业支付宝账号如何找回？",
-    keywords: ["找回账号", "找回支付宝", "账号找回", "忘记账号", "找回企业账号", "账号丢失", "找回密码", "企业账号找回"],
-    answer: "电脑端打开支付宝商家平台（b.alipay.com）--选择【密码登录】，点击登录框下方【找回账号】，根据页面提示使用个人支付宝扫码并进行企业信息填写和身份验证，验证完成后可选择对应的企业账号，对登录邮箱、登录密码和支付密码进行重置。",
-    related: [507, 508]
-  },
-  {
-    id: 504,
-    category: "支付宝相关问题",
-    question: "企业支付宝登录邮箱如何修改？",
-    keywords: ["修改邮箱", "登录邮箱", "换邮箱", "改邮箱", "邮箱修改", "更改邮箱", "邮箱变更"],
-    answer: "电脑端登录商家平台（b.alipay.com）--【账号中心】--【商户信息】--【登录账号信息】--【修改】--填写新的邮箱并进行验证，验证成功后则邮箱修改完成。",
-    related: [509]
-  },
-  {
-    id: 505,
-    category: "支付宝相关问题",
-    question: "企业支付宝如何重置安全保护问题？",
-    keywords: ["重置安保问题", "安全保护问题", "安保问题", "重置安全问题", "安全问题", "保护问题", "安保"],
-    answer: "登录商家平台（b.alipay.com）--【账号中心】--【重置安保问题】--进行企业身份验证--设置新的安保问题--重置成功",
-    related: []
-  },
-  {
-    id: 506,
-    category: "支付宝相关问题",
-    question: "企业支付宝如何重置支付密码？",
-    keywords: ["重置支付密码", "支付密码", "忘记支付密码", "改支付密码", "支付密码重置", "修改支付密码"],
-    answer: "登录商家平台（b.alipay.com）--【账号中心】--【商户信息】--【支付账户信息】，点击【重置支付密码】，按页面提示进行身份验证，验证通过后即可设置新的支付密码。",
-    related: [507, 508]
-  },
-  {
-    id: 507,
-    category: "支付宝相关问题",
-    question: "企业支付宝登录密码忘记了怎么办？",
-    keywords: ["忘记登录密码", "登录密码忘记", "忘记密码", "找回登录密码", "登录密码丢失", "密码忘了"],
-    answer: "登录商家平台（b.alipay.com），登录框选择【密码登录】后，点击【忘记登录密码？】，按页面提示输入登录邮箱并进行身份验证，验证通过后即可设置新的登录密码。",
-    related: [508]
-  },
-  {
-    id: 508,
-    category: "支付宝相关问题",
-    question: "如何修改企业支付宝登录密码？",
-    keywords: ["修改登录密码", "改登录密码", "重置登录密码", "登录密码修改", "更改登录密码", "修改密码"],
-    answer: "1、可以登录账号后重置：登录（b.alipay.com）--【账号中心】--【商户信息】--【支付账户信息】，点击【重置登录密码】按页面提示进行身份验证，验证通过后即可设置新的登录密码；\n2、忘记登录密码重置：登录（b.alipay.com），登录框选择【密码登录】后，点击【忘记登录密码？】，按页面提示输入登录邮箱并进行身份验证，验证通过后即可设置新的登录密码。",
-    related: [507]
-  },
-  {
-    id: 509,
-    category: "支付宝相关问题",
-    question: "企业支付宝账户如何修改绑定的手机号？",
-    keywords: ["修改手机号", "换手机号", "改手机号", "绑定手机号", "手机号修改", "更换手机号", "手机号变更"],
-    answer: "登录商户平台（b.alipay.com）--【账号中心】--【绑定手机号】--【修改】--输入新手机号并获取验证码，在完成【企业身份验证】成功后则修改成功。",
-    related: [504]
-  },
-  {
-    id: 510,
-    category: "支付宝相关问题",
-    question: "企业支付宝认证信息如何更新？",
-    keywords: ["认证信息更新", "证照信息", "更新企业信息", "认证更新", "主体证件", "企业认证", "认证信息", "证照更新"],
-    answer: "登录商家平台（b.alipay.com）--【账号中心】--【证照信息】--【修改】--更新企业信息，按页面要求提交主体证件和法人身份证件正反面照片，提交后约1小时内审核，审核通过后实时更新。",
-    related: []
-  },
-  {
-    id: 511,
-    category: "支付宝相关问题",
-    question: "如何注销企业支付宝账户？",
-    keywords: ["注销账户", "注销支付宝", "销户", "关闭账户", "注销", "取消账户", "账号注销"],
-    answer: "登录商家平台（b.alipay.com）--【账号中心】--【商户信息】--右上角【注销】--签署《支付宝账户注销协议》--勾选'同意'点击下一步，输入支付密码--提交后约48小时审核，审核通过后会邮件通知。\n注：在注销账户前，请先确认账户内是否还有未清空的资产（如资金、保证金或合约关系），或者有未完成的事项（如欠费记录、未完成的交易或未结算的资金等），需先处理完成再进行注销操作。账户注销成功后无法恢复，请谨慎操作！",
-    related: [512]
-  },
-  {
-    id: 512,
-    category: "支付宝相关问题",
-    question: "营业执照注销后，怎么提取支付宝账户资金？",
-    keywords: ["营业执照注销", "提取资金", "资金处置", "商户注销", "资金提取", "注销资金", "资金小蜜", "商户资金处置", "注销后资金", "支付宝提取资金"],
-    answer: "企业法人或股东打开手机支付宝APP，搜索【资金小蜜】--【商户资金处置】--【商户注销资金处置】--同意协议并提交--按页面提示完成身份识别和基本信息填写并提交，提交后会在7个工作日内完成审核。\n审核未通过：【待提交】补传凭证\n审核通过：【待提交】--完成身份识别--将资金调入已绑定同名银行卡或支付宝账号--签署【承诺函】--提交--支付宝完成最后审核，审核通过后资金会实时转入指定的银行卡或支付宝账户（前提是银行和支付宝账户正常）",
-    related: [511],
-    solo: true
-  },
-  {
-    id: 513,
-    category: "支付宝相关问题",
-    question: "企业支付宝如何提现？",
-    keywords: ["支付宝提现", "提款", "资金提现", "自动提现", "手动提现", "取现", "提现到银行卡", "企业提现"],
-    answer: "手动提现：支付宝商家平台（b.alipay.com）--【资金管理】--【资金服务】--【提现】--选择收款银行账户，提现金额和到账时间，点击【立即提现】--输入支付密码（提交成功）自动提现：支付宝商家中心（b.alipay.com）--【资金管理】--【自动调拨】--【资金管家】--【立即开通】，签署成功后在【自动调拨】--【自动提现】进行自动提现的相关设置，点击【提交】即可完成。",
-    related: []
-  },
-  {
-    id: 514,
-    category: "支付宝相关问题",
-    question: "如何取消/关闭自动提现？",
-    keywords: ["取消自动提现", "关闭自动提现", "停止自动提现", "自动提现关闭", "关闭资金管家", "取消自动提款"],
-    answer: "登录商家平台（b.alipay.com）--【产品中心】--【资金管家】--【关闭产品】",
-    related: []
-  },
-  {
-    id: 515,
-    category: "支付宝相关问题",
-    question: "如何创建（蚂蚁）门店？",
-    keywords: ["创建门店", "蚂蚁门店", "门店管理", "添加门店", "新建门店", "批量创建门店", "单个门店"],
-    answer: "登录支付宝商家平台（b.alipay.com）--【工作台】--【门店管理】--点击【添加门店】--选择【创建单个门店】或【批量创建门店】--按页面提示进行操作，点击【保存】门店，即可在门店列表查看到门店信息。\n注：门店编号一定要与收银系统保持一致且在该账户下唯一",
-    related: []
-  },
-  {
-    id: 516,
-    category: "支付宝相关问题",
-    question: "支付宝账户PID如何获取？",
-    keywords: ["PID", "获取PID", "支付宝PID", "合作伙伴身份", "2088", "mapi网关", "PID查询", "商户号", "合作伙伴ID"],
-    answer: "登录开放平台（open.alipay.com）--右上角头像处理下方【账户中心】--左侧【密钥管理】--【mapi网关产品密钥】--合作伙伴身份，以2088开头的一串字符，即为PID",
-    related: [502]
-  },
-  {
-    id: 517,
-    category: "支付宝相关问题",
-    question: "支付宝账户如何修改结算银行卡号？",
-    keywords: ["支付宝修改银行卡", "支付宝结算银行卡", "支付宝银行账号", "修改结算银行卡号", "支付宝银行卡", "支付宝改银行卡"],
-    answer: "登录https://b.alipay.com/---资金管理---银行账户管理--添加新的银行账号。注：仅营业执照、社会信用代码未更换的情况下，可按上述流程修改银行账号信息",
-    related: [513],
-    solo: true
-  },
-  {
-    id: 518,
-    category: "支付宝相关问题",
-    question: "如何开具/申请支付宝 服务费/手续费发票？",
-    keywords: ["支付宝发票", "支付宝手续费发票", "支付宝服务费发票", "服务费发票", "开具发票", "支付宝开具发票", "支付宝申请发票", "支付宝开发票"],
-    answer: "商户需先维护开票资料，再根据选择的开票方式操作：\n自动按月开票：支付宝次月自动开票，每月8号左右可下载，历史未开票也会补开。\n手动申请开票：次月登录b.alipay.com →【对账中心】→【费用账单】→【勾选明细】→【申请开票】，一般3个工作日内开具。",
-    related: [],
-    solo: true
-  }
-];
-
-/* ============================================================
-   以下为机器人引擎逻辑，一般无需修改
-   ============================================================ */
-
-// —— 文本预处理与相似度计算 ——
-function normalize(s) {
-  return (s || "").toLowerCase().replace(/[^\w\u4e00-\u9fa5]/g, "");
-}
-// 字符 bigram 集合（对中英文都适用）
-function bigrams(s) {
-  s = normalize(s);
-  const set = new Set();
-  if (s.length < 2) { if (s) set.add(s); return set; }
-  for (let i = 0; i < s.length - 1; i++) set.add(s.substring(i, i + 2));
-  return set;
-}
-function jaccard(a, b) {
-  if (a.size === 0 && b.size === 0) return 0;
-  let inter = 0;
-  for (const x of a) if (b.has(x)) inter++;
-  return inter / (a.size + b.size - inter);
-}
-
-// 综合打分：整句相似度(0.4) + 关键词命中(0.6)
-// 关键词命中给基础分，命中越多越接近 1，避免长关键词列表稀释单次命中
-function scoreEntry(query, entry) {
-  const qBi = bigrams(query);
-  const sentSim = jaccard(qBi, bigrams(entry.question));
-  let kwScore = 0;
-  const kws = entry.keywords || [];
-  if (kws.length) {
-    let hits = 0;
-    const qn = normalize(query);
-    for (const kw of kws) {
-      if (qn.includes(normalize(kw))) hits++;
-    }
-    kwScore = hits > 0 ? Math.min(1, 0.50 + 0.50 * (hits / kws.length)) : 0;
-  }
-  return sentSim * 0.4 + kwScore * 0.6;
-}
-
-// 匹配阈值
-const THRESHOLD = 0.32;
-
-function search(query) {
-  const scored = knowledgeBase.map(e => ({ entry: e, score: scoreEntry(query, e) }));
-  scored.sort((a, b) => b.score - a.score);
-  return scored;
-}
-
-// —— 聊天交互 ——
-const messagesEl = document.getElementById("messages");
-const inputEl = document.getElementById("input");
-const sendBtn = document.getElementById("sendBtn");
-
-function addMsg(role, html) {
-  const div = document.createElement("div");
-  div.className = "msg " + role;
-  div.innerHTML = '<div class="mini-avatar">' + (role === "bot" ? "🤖" : "🙂") + '</div><div class="bubble">' + html + "</div>";
-  messagesEl.appendChild(div);
-  messagesEl.scrollTop = messagesEl.scrollHeight;
-  return div;
-}
-
-function esc(s) {
-  return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-}
-
-function typing() {
-  const div = document.createElement("div");
-  div.className = "msg bot";
-  div.id = "typing";
-  div.innerHTML = '<div class="mini-avatar">🤖</div><div class="bubble typing"><span></span><span></span><span></span></div>';
-  messagesEl.appendChild(div);
-  messagesEl.scrollTop = messagesEl.scrollHeight;
-}
-function clearTyping() {
-  const t = document.getElementById("typing");
-  if (t) t.remove();
-}
-
-function answerHtml(entry) {
-  let cls = "q";
-  if (entry.category === "报错解答") cls = "e";
-  else if (entry.category === "调研表填写答疑") cls = "r";
-  else if (entry.category === "微信相关问题") cls = "w";
-  else if (entry.category === "支付宝相关问题") cls = "q";
-  let html = '<span class="tag ' + cls + '">' + entry.category + "</span>\n" + esc(entry.answer).replace(/\n/g, "<br>").replace(/\[img:([^\]]+)\]/g, function(m, src) {
-    return '<img class="answer-img" src="' + src + '" onclick="window.open(\'' + src + '\')" loading="lazy">';
-  });
-  if (entry.related && entry.related.length) {
-    const items = entry.related
-      .map(rid => knowledgeBase.find(e => e.id === rid))
-      .filter(Boolean)
-      .map(e => '<span class="related-item" onclick="askById(' + e.id + ')">↳ ' + esc(e.question) + "</span>")
-      .join("");
-    if (items) html += '<div class="related"><div class="related-title">相关问题：</div>' + items + "</div>";
-  }
-  return html;
-}
-
-function askById(id) {
-  const e = knowledgeBase.find(x => x.id === id);
-  if (!e) return;
-  inputEl.value = e.question;
-  send();
-  // 移动端点击问题后自动收起侧边栏，露出聊天区的答案
-  if (isMobile && sideOpen) {
-    sideOpen = false;
-    document.getElementById("side").classList.remove("open");
-    document.getElementById("sideBackdrop").classList.remove("show");
-  }
-}
-
-function send() {
-  const q = inputEl.value.trim();
-  if (!q) return;
-  addMsg("me", esc(q));
-  inputEl.value = "";
-  sendBtn.disabled = true;
-  typing();
-
-  setTimeout(() => {
-    clearTyping();
-    sendBtn.disabled = false;
-    const results = search(q);
-    const best = results[0];
-
-    if (best && best.score >= THRESHOLD) {
-      let html = answerHtml(best.entry);
-      // 报错解答类问题只需精准匹配一条，不补充其他分类答案；也不将报错解答作为补充答案展示
-      // solo 标记的条目也只展示自身答案，不补充其他分类
-      if (best.entry.category !== "报错解答" && !best.entry.solo) {
-        // 查找第二条不同分类的高分结果（最多展示2条），跳过报错解答
-        for (let i = 1; i < results.length; i++) {
-          const r = results[i];
-          if (r.score >= THRESHOLD && r.entry.category !== best.entry.category && r.entry.category !== "报错解答") {
-            html += '<hr class="answer-divider"><div class="related-title">以下是「' + esc(r.entry.category) + '」中的相关回答：</div>' + answerHtml(r.entry);
-            break;
-          }
+    <script>
+    const projects = [
+        {
+            id: 'p1',
+            name: '项目一',
+            title: '调研表填写答疑',
+            items: [
+                {
+                    q: '1、这张调研表是干什么用的？',
+                    a: '《商户上线调研表》是用于直连微信、支付宝上线时了解商户需求，所需采集的商户信息。主要含五块：商户基本信息、结算信息（支付宝）、结算信息（微信）、证件资料清单、门店清单。填好后提交给对接的销售/上线人员，用于安排上线。'
+                },
+                {
+                    q: '2、商户基础信息如何填写？',
+                    a: '• 商户全称：填写此次结算到银行账户主体对应的营业执照名称；\n• 上线门店数：开通支付的门店/营业点数；\n• 收银系统：现化 Infrasys 或 正品贵德。',
+                    images: ['项目一_0.png']
+                },
+                {
+                    q: '3、上线产品如何选择？',
+                    a: '勾选对应的上线产品：\n• 如仅上线支付宝/微信线下支付，勾选【支付宝扫码付】或【微信扫码付】；\n• 如涉及到公众号或小程序点餐，勾选【支付宝/微信扫码点餐】等。\n注意：上线「微信扫码点餐/外卖」需填小程序 AppID；上线「微信会员」需填公众号 AppID。',
+                    images: ['项目一_1.png']
+                },
+                {
+                    q: '4、是否有支付宝账号？账号的格式是什么样的？',
+                    a: '如有账号：填写账号信息：\n• 企业支付宝账号为邮箱格式；\n• 个体工商户支付宝账号为邮箱格式或法人个人手机号格式；\n如无账号：需自行申请一个支付宝账号，可参考此文档完成账号的注册和实名认证，并在完成后，将支付宝账号填入在表格中：https://cshall.alipay.com/enterprise/knowledgeDetail.htm?knowledgeId=201602847673'
+                },
+                {
+                    q: '5、产品签约截图和开放平台密钥截图如何获取？',
+                    a: '可点击表格内链接跳转，或登录对应网址查看后截图，粘贴到对应处：\n• 产品签约截图：登录 B.alipay.com --> 账号中心 --> 签约管理 --> 已生效，截图「当面付/JSAPI」产品状态；\n• 开放平台密钥截图：登录 Open.alipay.com --> 右上角头像下【账户中心】--> 左侧【密钥管理】-->【应用密钥管理】，截全图。',
+                    images: ['项目一_2.png', '项目一_3.png']
+                },
+                {
+                    q: '6、目前已有微信账号，是否还需重新申请新账号？为什么？',
+                    a: '原微信账号不能使用，需要重新申请账号。\n为商户申请微信账号只是从技术上能作为石基的子商户类型，符合微信的接口联调所需，所以需要在腾讯授权给我司的渠道商平台申请子商户支付号。'
+                },
+                {
+                    q: '7、开户银行信息如何填写？',
+                    a: '开户银行及账号需准确，开户行填写须精准到【**支行】，（如【中国工商银行深圳高新园支行】）不能只填写总行。\n注：企业主体必须填对公结算账户，个体户可选择进对公账户或法人个人账户。'
+                },
+                {
+                    q: '8、企业结算可以选择进私户吗？',
+                    a: '以营业执照主体为准；\n• 营业执照是企业，必须进对公账户，不能进私户；\n• 营业执照是个体工商户，可选择进对公账户或法人个人银行账户。'
+                },
+                {
+                    q: '9、超管是做什么的？要怎么填写超管信息？',
+                    a: '超级管理员建议填写企业财务负责人，主要职责：\n• 接收开户信息及完成账号签约流程；\n• 进行商户号的日常操作及资金管理。\n需将超管的姓名、身份证号、手机号和邮箱填写完善。'
+                },
+                {
+                    q: '10、调研表中的客服电话必须填写吗？',
+                    a: '必须填写。客服电话将显示在微信支付账单界面，方便客人联系商家。\n• 可留手机号或座机号；\n• 座机号需加区号。'
+                },
+                {
+                    q: '11、公众号、小程序信息必须填写吗？',
+                    a: '根据上线产品的需求进行填写，表内对应位置有「点击快速跳转」链接：\n• 仅上线微信支付：可不填公众号/小程序信息；\n• 上线微信会员：需填写公众号信息，包括公众号昵称和开发者ID（WX开头的一串字符）。查看路径：mp.weixin.qq.com --> 开发 --> 基本配置 --> 公众号开发信息；\n• 上线扫码点餐/外卖：需填写小程序信息，包括小程序昵称和开发者ID（WX开头的一串字符）。查看路径：mp.weixin.qq.com --> 左下角头像处 --> 账号设置 --> 账号信息。',
+                    images: ['项目一_4.png']
+                },
+                {
+                    q: '12、提交的相关证件资料，有什么要求？',
+                    a: '• 所有证件资料有效期应大于 3 个月；\n• 要求原件扫描件或照片，如复印件需加盖红色企业公章；\n• 所有证件需露出四边四角；\n• 公章或水印不能覆盖到重要信息（如名字、有效期、证件号码等）；\n• 超管为非法人时，需提供超管的身份证正、反面；\n• 门头照需含品牌名（为实景图，不能是效果图，严禁 P 图）；\n• 如需备注用途，需带有“微信支付”字样，如【仅用于微信支付申请使用】。'
+                },
+                {
+                    q: '13、门店清单填写要求？',
+                    a: '• 门店编号：需填写 POS 收银系统内的编号，且不能重复；也可自定义门店编号，要求 6 位纯数字或字母+数字，不以 0 开头；\n• 门店联系电话：手机/400/固话，如固话需加区号；\n• 门店地址：需详细到「**区**号」（精确到门牌号）。',
+                    images: ['项目一_5.png']
+                }
+            ]
+        },
+        {
+            id: 'p2',
+            name: '项目二',
+            title: '微信相关问题',
+            items: [
+                { q: '微信账户如何修改结算银行账户？', a: '【商户平台】\n• 超级管理员登录商户平台（https://pay.weixin.qq.com），点击【账户中心-> 银行结算账户-> 修改账户】，若审核失败可点击查看详情，修改后重新提交；\n• 点击修改账户，填写新的账户信息；若结算账户户名和商户号最新的主体名称不一致、或户名中有括号需要修改全半角，可以点击账户户名旁的“编辑”进行修改、确认无误后点击“保存”；提交后等待审核。\n\n【商家助手小程序】\n• 关注商家助手小程序，登录微信【发现】-->【小程序】--> 搜索小程序【微信支付商家助手】；\n• 超级管理员权限登录商家助手小程序，点击公司名称 -->【结算银行账户】；\n• 安全验证后，点击修改账户，填写新的账户信息；若结算账户户名和商户号最新的主体名称不一致、或户名中有括号需要修改全半角，可以点击账户户名进行修改；提交后等待审核。' },
+                { q: '如何在商户平台修改公司名称？', a: '• 公司名称是该商户的主体名称，需与颁证单位公示信息保持一致，若已在颁证单位（如工商局）进行更名，可自助登录商户平台（https://pay.weixin.qq.com）申请修改主体。\n• 商户平台，点击【账户中心】-->【商户信息】-->【经营证件信息】点击修改；\n• 填写主体信息、法人信息（不支持变更主体）；\n• 确认填写信息无误后，点击提交等待审核。\n注：若审核驳回，点击修改查看具体驳回原因，调整后再重新提交审核。' },
+                { q: '如何在商户平台修改客服电话？', a: '超级管理员登录微信支付商户平台（https://pay.weixin.qq.com/）-->【账户中心】-->【商户信息】-->【经营信息】-->【修改】，找到客服电话信息，点击【更改】，转入新的客服电话，点击【号码验证】，系统会致电给新的客服电话，请注意接听，并按语音提示核实修改，商户平台会出现弹窗，提示修改成功。' },
+                { q: '如何在商户平台修改法人证件？', a: '超级管理员登录微信支付商户平台（https://pay.weixin.qq.com/）-->【账户中心】-->【商户信息】-->【经营证件信息】-->【修改】，找到受益人信息，上传新的身份证正、反照片，核实信息后，点击【保存并下一步】提交修改。' },
+                { q: '如何在商户平台修改超级管理员信息？', a: '超级管理员即商户号的联系人，拥有商户号的最高管理权限，会接收平台重要通知并可进行资金操作。\n\n1）旧超管仍可以登录商户平台：\n• 【原超级管理员】登录PC端微信支付商户平台（pay.weixin.qq.com）--> 账户中心 --> 商户信息 --> 点击"超级管理员信息"后的"修改"；\n• 点击【获取小程序】，请【新超级管理员】扫码确认新超管信息；\n• 新超管扫码后，点击【继续填写】，可提交新超管的证件照片、联系电话、联系邮箱等信息，提交时需新超管本人刷脸验证，验证完成后新超管信息提交成功；\n• 新超管提交后，原超管将收到微信支付商家助手的进展通知，此时，原超管可登录商户平台确认新超管信息，确认信息后点【下一步】，进入账户验证环节；\n• 若新超管不是法人，需通过上行打款或法人扫码验证的方式完成账户验证，验证通过后平台将在3-5个工作日审核，审核通过后超管修改完成。若新超管是法人，则账户验证直接通过，等待平台审核即可。\n\n2）原超级管理员已离职或失联，无法登录商户平台：\n• 可点击链接：https://pay.weixin.qq.com/static/help_guide/retrieve_mchnum.shtml ，按照指引完成超级管理员的变更。' },
+                { q: '如何在商户平台修改商家简称？', a: '【商户平台】超管登录微信支付商户平台（https://pay.weixin.qq.com/）-->【账户中心】-->【账户设置】-->【商户信息】-->【经营信息】-->【修改】，录入新的商家简称，点击【提交修改申请】等待审核。\n\n【商家助手小程序】超管登录微信支付商家助手小程序，点击顶部【商户名称】进入【我的】页面，进入后点击顶部【商户名称】进入【商家信息】页面，点击【商家简称】，录入新的商家简称，点击【提交修改申请】等待审核。' },
+                { q: '如何修改受益人信息？', a: '受益所有人一般是指最终拥有、实际控制商户主体，或享有商户主体最终收益的自然人。对于股权结构简单的公司，通常持有 25% 以上股权的自然人股东需要作为受益所有人备案。\n\n【商户平台】登录【pay.weixin.qq.com】--> 点击菜单栏【账户中心】-->【商户信息】-->【受益人信息】-->【修改】，填写受益人信息 -->【保存并下一步】-->【确认提交】。\n\n【商家助手小程序】超管登录【微信支付商家助手】--> 点击顶部【商户名称】，进入【我的】-->【商户名称】-->【商家信息】-->【信息详情】-->【法人及受益人】，可删除受益人，点击删除图标，确认删除。点击【添加受益人】可添加新的受益人，添加上限为4人，提交新受益人证件照片，修改完成后，点击【提交】，审核通过后生效。' },
+                { q: '微信商户平台如何修改超级管理员邮箱？', a: '超级管理员邮箱用于日常接收商户号相关通知内容。登录微信支付商户平台（pay.weixin.qq.com）--> 账户中心 --> 个人信息 --> 超级管理员信息，在对应信息后点击“修改”，修改后，可填写新邮箱并获取验证码，收到并填写正确的验证码后，超管联系邮箱修改成功。' },
+                { q: '微信商户平台如何修改超级管理员手机号？', a: '使用超管权限登录微信支付商户平台（pay.weixin.qq.com）--> 账户中心 --> 个人信息 --> 超级管理员信息，在对应信息后点击“修改”，按页面提示填写新联系电话后，完成超管姓名验证与刷脸验证即可修改成功。' },
+                { q: '10、微信账户为什么有资金未结算？', a: '需满足以下条件，商户的交易资金才会结算，暂不支持将自动结算修改成手动结算。\n• 商户号需完成签约入驻（【商户平台】-->【账户中心】-->【支付申请】查看是否完成验证和签约）；\n• 达到结算周期后商户的交易资金才会自动结算。（查看方法：进入【商户平台】-->【账户中心】-->【商户信息】-->【结算信息】，可以查看结算周期）\n• 开通了手续费账户，且账户余额需大于100，且足够扣除订单结算手续费。\n• 商户号存在违约情况，请在【账户中心】-->【违约记录】核实。' },
+                { q: '11、微信结算是否会产生手续费，结算周期是多久？', a: '结算按每笔订单金额收取对应的手续费，具体费率及周期根据微信账号申请的经营类目/结算规则决定。' },
+                { q: '12、结算款项到账时间是多久？', a: '自动提现到商户的结算银行账户：自提现之日起3个工作日内留意；手动提现（仅新资金流商户支持）：自提现次日起3个工作内留意到账，具体以银行到账时间为准。' },
+                { q: '13、微信支付退款时会将手续费退回吗？', a: '退款不收取手续费。' },
+                { q: '14、微信结算支持的账户类型？', a: '个体工商户可选择结算至法人个人账户或对公账户，其余主体类型仅支持结算到对公账户。' },
+                { q: '15、微信账户如何修改结算银行账号信息？', a: '1）银行开户名称不变，只修改银行账号\n【商户平台】\n• 使用超级管理员登录商户平台（https://pay.weixin.qq.com），点击【账户中心 --> 银行结算账户 --> 修改账户】，若审核失败可点击查看详情，修改后重新提交；\n• 点击修改账户，填写新的账户信息；若结算账户户名和商户号最新的主体名称不一致、或户名中有括号需要修改全半角，可以点击账户户名旁的“编辑”进行修改、确认无误后点击“保存”；提交待审核。\n【小程序】\n• 超级管理员权限登录商家助手小程序，点击公司名称 -->【结算银行账户】；\n• 安全验证后，点击修改账户，填写新的账户信息；若结算账户户名和商户号最新的主体名称不一致、或户名中有括号需要修改全半角，可以点击账户户名进行修改；提交待审核。\n\n2）若在工商局变更公司名称，登录商户平台（https://pay.weixin.qq.com）点击【账户中心】-->【商户信息】-->【经营证件信息】点击修改，根据页面提示填写相关信息，保存后提交待审。' },
+                { q: '16、微信提现有哪些方式？怎么开通？', a: '提现作为资金流转基础功能，为商户提供将资金从商户平台提现至商户号关联银行卡的能力，分为自动提现和手动提现。自动提现为系统自动执行，提现金额为指定发起日的前一日日终可用余额减留存额；手动提现由商户在商户平台手动发起，提现金额由商户自行填写，注：手动提现仅支持新资金流模式商户发起。\n\n【自动提现】\n超级管理员账号登录【商户平台】-->【产品中心】-->【自动提现】，点击“申请开通”；\n或超级管理员登录【商家助手小程序】-->【资金管理】-->【提现管理】。\n\n【手动提现】（仅支持新资金流结算模式的商户）\n交易中心 --> 资金管理 -->提现/转出 --> 在收款账户选择银行卡，页面会显示当前账户余额。' },
+                { q: '17、微信提现是否可以提现到非商户号绑定的银行卡？', a: '不可以，资金仅支持提现到本商户号绑定的结算银行卡。' },
+                { q: '18、微信提现是否收费？', a: '资金提现到银行卡免费。' },
+                { q: '19、微信结算提现失败后，资金去哪里了？', a: '1）即时结算模式：提现失败资金在基本户，商户确认好结算账号无异常以后，手动发起失败资金对应数额的提现；\n2）非即时结算模式：由于您的结算账号信息有误，请修改结算信息为正确并确保可正常入账，再使用电脑打开链接：pay.weixin.qq.com/index.php/core/cashmanage/querycbalance，使用超级管理员权限登录对应商户号，将资金全部转出至可用余额，转出后手动提现可用余额内的资金。\n注：访问链接提现时如有报错“未知错误，请联系管理员！”，请先访问页面“交易中心 --> 资金管理 --> 充值”，再重新进入该链接操作即可。' },
+                { q: '20、微信支付是否能关闭自动提现？', a: '基于合规要求暂不支持关闭自动提现，但可通过设置提现周期（按日/按周/按月）或留存额来控制实际提现频率与金额。设置方法：使用超管微信进入微信支付商家助手小程序 --> 资金管理 --> 提现管理进行设置。' },
+                { q: '21、如何申请手续费发票？', a: '使用超级管理员账号登录商户平台，点击【账户中心】-->【账户设置】-->【发票信息】-->【发票配置】，填写发票信息，可根据实际情况，选择发票类型（增值税专用发票/普通发票）发票介质（纸质版/电子版），提交成功即申请成功。腾讯会在次月开始按月开票，无需每月提交申请。' },
+                { q: '22、如何暂停或恢复开票？', a: '若暂时无需开票，超管登录商家平台，点击【账户中心】-->【账户设置】-->【发票信息】，申请暂停/开启。' },
+                { q: '23、如何修改发票信息？', a: '若修改发票类型及收件地址等信息，可点击账户中心 -->【发票信息】--> 右上角【发票配置】申请修改；\n若需修改发票票面信息，如地址、抬头、税号等需先在【账户中心】-->【商户信息】内申请修改后重新提交发票申请。' },
+                { q: '24、如何补开历史手续费发票？', a: '超管登录微信商户平台，点击【账户中心】-->【发票信息】-->【发票配置】，点击“修改”后，在页面底部勾选“需要补开历史发票”并提交即可。' },
+                { q: '25、微信商家平台如何查询发票开票状态？', a: '登录【商户平台】-->【账户中心】-->【发票信息】，可以查询发票开票信息。' },
+                { q: '26、如何查询微信商户号的费率？', a: '超级管理员进入微信 --> 登录【微信支付商家助手小程序】-->点击商户名称进入【我的】详情页 --> 点击顶部进入【商家信息页】--> 在【费率】一栏，即可查看当前手续费率。' },
+                { q: '27、退款是否收取手续费？', a: '退款不收取手续费。' },
+                { q: '28、退款为什么一直不成功？', a: '1）退款状态为“交易资金不足”：\n由于选择了交易未结算资金进行退款，资金不足无法完成退款。需等待新的订单生成，交易资金在结算之前足够退款金额系统自动执行退款，或充值之后选择余额退款。\n2）退款状态为“可用余额不足”：\n由于选择了可用余额退款，余额不足无法完成退款。需在现金管理内进行充值，充值成功到账后再次手动操作点击可用余额退款。\n3）退款状态为“退款异常”：\n当用户使用银行卡支付时，微信支付首先原路退款到银行卡，当银行卡状态不正常或银行卡错误时，微信支付会优先转退用户微信零钱，仅当用户微信零钱也注销，才会转入“退款异常”状态。可选择“其它方式退款”，手动录入用户的银行信息完成退款。\n4）退款状态为“待审核”：\n说明商户配置了退款审核流程，联系审核人登录商户平台审核通过。审核人登录商户平台，点击【账户中心】-->【待审核任务】--> 选择流程类型 -->【退款审核】,通过审核即可。\n有审核流的退款单，自发起退款申请后14天内未审核，系统将自动驳回，如有需要，商户可再次发起退款申请。' },
+                { q: '29、交易金额不足如何完成退款？', a: '若当前交易资金不足，建议充值后再发起退款，或有新交易后，待交易资金足够后再次发起退款申请。' },
+                { q: '30、可用余额如何充值？', a: '登录商户平台，点击【交易中心】-->【资金管理】-->【充值/转入】，支持充值方式：个人网银支付、企业网银支付、扫码充值；说明：充值的可用余额，可以操作营销工具、退款、提现。' },
+                { q: '31、微信商户如何进行资金充值？', a: '充值，是微信支付商户平台为商户提供的基础功能之一，主要是为商户提供便捷的资金进入商户账户的渠道。当资金进入商户账户后，商户可使用企业付款、微信营销工具等。\n超管【登录商户平台 --> 交易中心 --> 资金管理 --> 充值/转入】，可以根据实际情况进行不同方式的充值，如：转账充值、扫码充值和网银充值。充值一般为实时到账。' },
+                { q: '32、微信平台如何创建门店？', a: '超管登录微信商家平台，点击【营销中心】-->【门店管理】-->【新增单个门店或批量上传门店】，根据页面提示进行操作，门店添加成功后次日生效。' },
+                { q: '33、微信支持多长时间内的交易订单退款？', a: '目前支持一年内的交易订单进行退款。' },
+                { q: '34、超管无法收到短信验证怎么办？', a: '【手机号正确】\n1、请检查手机是否有安全应用拦截及过滤短信，可在拦截短信中，依据关键词"微信支付"查找。\n2、请确认手机内存是否已满，若已满，请先清除旧短信或不常用的应用。\n\n【手机号错误】\n1、如本账号为超管，可登录商户平台 --> 账户中心 --> 个人信息 --> 联系手机，点击修改，输入新联系手机及验证码，通过安全验证即可修改成功。\n2、如本账号为员工账号，可找超级管理员登录平台，在 账户中心 --> 员工账号管理 --> 员工列表，本账号后点击修改信息，填入新的信息后通过验证即可修改成功。' },
+                { q: '35、如何添加/创建微信员工账号？', a: '由超管根据不同的权限设置，添加/创建员工账号：\n【商户平台】\n1、超管登录商户平台，点击【账户中心】-->【员工账号管理】可选择对应的角色配置权限后点击【新增账号】；\n2、点击【新增账号】为员工设置登录账号名、微信号（必须关注【微信支付商家助手】公众号）、员工姓名、联系手机、联系邮箱，配置对应角色后提交。超管输入操作密码即可添加成功。\n【商家助手小程序】\n超管进入【微信支付商家助手】小程序 -->【员工管理】-->【添加员工】并向员工发送添加邀请。员工收到邀请后，填写员工账号、姓名、联系电话并提交，提交成功后由【微信支付商家助手】公众号完成审批。' },
+                { q: '36、如何解除/绑定管理员和员工微信号？', a: '1、更换绑定：进入【商户平台】，点击【账户中心】-->【个人设置】-->【个人信息】-->【账号信息】，点击微信号的更换绑定即可完成修改。\n2、解除绑定：进入【商户平台】，点击【账户中心】-->【账户设置】-->【员工账号管理】，选择员工列表，并解除绑定。' },
+                { q: '37、如何修改营业执照证件？', a: '超级管理员登录微信支付商户平台（https://pay.weixin.qq.com/）-->【账户中心】-->【商户信息】-->【经营证件信息】-->【修改】-->上传最新的营业执照，确认并提交。' }
+            ]
+        },
+        {
+            id: 'p3',
+            name: '项目三',
+            title: '支付宝相关问题',
+            items: [
+                { q: '1、如何注册支付宝账号？', a: '参考官方文档，自行完成支付宝账户的注册和实名认证流程，步骤如下：https://cshall.alipay.com/enterprise/knowledgeDetail.htm?knowledgeId=201602847673' },
+                { q: '2、支付宝如何创建应用？', a: '登录开放平台（open.alipay.com）-->【控制台】-->【网页/移动应用】-->【创建网页/移动应用】--> 输入自定义名称、商家账号、图标 --> 选择【网页应用】-->【立即创建】' },
+                { q: '3、企业支付宝账号如何找回？', a: '电脑端打开支付宝商家平台（b.alipay.com）--> 选择【密码登录】，点击登录框下方【找回账号】，根据页面提示使用个人支付宝扫码并进行企业信息填写和身份验证，验证完成后可选择对应的企业账号，对登录邮箱、登录密码和支付密码进行重置。' },
+                { q: '4、企业支付宝登录邮箱如何修改？', a: '电脑端登录商家平台（b.alipay.com）-->【账号中心】-->【商户信息】-->【登录账号信息】-->【修改】--> 填写新的邮箱并进行验证，验证成功后则邮箱修改完成。' },
+                { q: '5、企业支付宝如何重置安全保护问题？', a: '登录商家平台（b.alipay.com）-->【账号中心】-->【重置安保问题】--> 进行企业身份验证 --> 设置新的安保问题 --> 重置成功。' },
+                { q: '6、企业支付宝如何重置支付密码？', a: '登录商家平台（b.alipay.com）-->【账号中心】-->【商户信息】-->【支付账户信息】，点击【重置支付密码】，按页面提示进行身份验证，验证通过后即可设置新的支付密码。' },
+                { q: '7、企业支付宝登录密码忘记了怎么办？', a: '登录商家平台（b.alipay.com），登录框选择【密码登录】后，点击【忘记登录密码？】，按页面提示输入登录邮箱并进行身份验证，验证通过后即可设置新的登录密码。' },
+                { q: '8、企业支付宝登录密码如何修改？', a: '1）可以登录账号后重置：登录（b.alipay.com）-->【账号中心】-->【商户信息】-->【支付账户信息】，点击【重置登录密码】按页面提示进行身份验证，验证通过后即可设置新的登录密码；\n2）忘记登录密码重置：登录（b.alipay.com），登录框选择【密码登录】后，点击【忘记登录密码？】，按页面提示输入登录邮箱并进行身份验证，验证通过后即可设置新的登录密码。' },
+                { q: '9、企业支付宝账户如何修改绑定的手机号？', a: '登录商户平台（b.alipay.com）-->【账号中心】-->【绑定手机号】-->【修改】--> 输入新手机号并获取验证码，在完成【企业身份验证】成功后则修改成功。' },
+                { q: '10、企业支付宝认证信息如何更新？', a: '登录商家平台（b.alipay.com）-->【账号中心】-->【证照信息】-->【修改】--> 更新企业信息，按页面要求提交主体证件和法人身份证件正反面照片，提交后约1小时内审核，审核通过后实时更新。' },
+                { q: '11、如何注销企业支付宝账户？', a: '登录商家平台（b.alipay.com）-->【账号中心】-->【商户信息】--> 右上角【注销】--> 签署《支付宝账户注销协议》--> 勾选"同意"点击下一步，输入支付密码 --> 提交后约48小时审核，审核通过后会邮件通知。\n注：在注销账户前，请先确认账户内是否还有未清空的资产（如资金、保证金或合约关系），或者有未完成的事项（如欠费记录、未完成的交易或未结算的资金等），需先处理完成再进行注销操作。账户注销成功后无法恢复，请谨慎操作！' },
+                { q: '12、营业执照注销后，怎么提取支付宝账户资金？', a: '企业法人或股东打开手机支付宝APP，搜索【资金小蜜】-->【商户资金处置】-->【商户注销资金处置】--> 同意协议并提交 --> 按页面提示完成身份识别和基本信息填写并提交，提交后会在7个工作日内完成审核。\n审核未通过：【待提交】补传凭证\n审核通过：【待提交】--> 完成身份识别 --> 将资金调入已绑定同名银行卡或支付宝账号 --> 签署【承诺函】--> 提交 --> 支付宝完成最后审核，审核通过后资金会实时转入指定的银行卡或支付宝账户（前提是银行和支付宝账户正常）。' },
+                { q: '13、企业支付宝如何提现？', a: '手动提现：支付宝商家平台（b.alipay.com）-->【资金管理】-->【资金服务】-->【提现】--> 选择收款银行账户，提现金额和到账时间，点击【立即提现】--> 输入支付密码（提交成功）\n\n自动提现：支付宝商家中心（b.alipay.com）-->【资金管理】-->【自动调拨】-->【资金管家】-->【立即开通】，签署成功后在【自动调拨】-->【自动提现】进行自动提现的相关设置，点击【提交】即可完成。' },
+                { q: '14、支付宝如何取消/关闭自动提现？', a: '登录商家平台（b.alipay.com）-->【产品中心】-->【资金管家】-->【关闭产品】' },
+                { q: '15、支付宝如何创建/添加（蚂蚁）门店？', a: '登录支付宝商家平台（b.alipay.com）-->【工作台】-->【门店管理】--> 点击【添加门店】--> 选择【创建单个门店】或【批量创建门店】--> 按页面提示进行操作，点击【保存】门店，即可在门店列表查看到门店信息。\n注：门店编号一定要与收银系统保持一致且在该账户下唯一。' },
+                { q: '16、支付宝账户PID如何获取？', a: '登录开放平台（open.alipay.com）--> 右上角头像下方【账户中心】--> 左侧【密钥管理】--> 【mapi网关产品密钥】--> 合作伙伴身份，以2088开头的一串字符，即为PID。' },
+                { q: '17、支付宝账户如何修改结算银行卡号？', a: '登录https://b.alipay.com/ --> 资金管理 --> 银行账户管理 --> 添加新的银行账号。\n注：仅营业执照、社会信用代码未更换的情况下，可按上述流程修改银行账号信息。' },
+                { q: '18、支付宝如何开具（申请）服务费/手续费发票？', a: '商户需先维护开票资料，再根据选择的开票方式操作：\n自动按月开票：支付宝次月自动开票，每月8号左右可下载，历史未开票也会补开。\n手动申请开票：次月登录b.alipay.com -->【对账中心】-->【费用账单】-->【勾选明细】-->【申请开票】，一般3个工作日内开具。' }
+            ]
+        },
+        {
+            id: 'p4',
+            name: '项目四',
+            title: '报错解答',
+            items: [
+                { q: '微信提示【涉嫌小程序交易异常】', a: '可通过商户号超级管理员通过微信进入【微信支付商家助手】小程序，点击【风险处理】，找到【涉嫌小程序交易异常】模块，按照申诉模版填写对应的资料，通过审核后即可完成申诉。', images: ['项目四_0.png'] },
+                { q: '微信提示【此商家的收款功能已被限制，暂无法支付。商家可登录微信商户平台/微信支付商家助手小程序查看原因和解决方案（10008）】', a: '原因：长期未交易，交易时系统提示其限制支付功能\n• 商户号超级管理员通过“微信支付商家助手”公众号，点击“我的商家”；或小程序搜索“微信支付商家助手”关键字进入“微信支付商家助手”小程序。\n• 进入商家助手小程序主界面，点击“风险处理”，进入“违约处理详情”页。点击【无交易商户未确认开户意愿】\n• 点击“去处理”，在跳转的页面中点击方框中的“确认商户身份”。微信支付后台会发起商户身份信息核实流程，流程审核通过后，便可解脱无交易的处罚。\n注：发起“确认商户身份”的流程时，请确保商户的主体资料最新且有效，否则解脱可能会失败。商户需提交最新有效的主体资料，完成资料修改流程后重新进行上述步骤。', images: ['项目四_1.png'] },
+                { q: '微信提示【涉及交易异常】', a: '【微信支付商家助手】小程序 --> 业务受限处理 --> 点击对应功能限制记录 --> 去处理，根据页面提示操作。', images: ['项目四_2.png'] },
+                { q: '微信提示【交易停滞】', a: '• 商家平台处理方法：登录pay.weixin.qq.com --> 账户中心 --> 违约记录 --> 商户管理记录 --> 点击“交易停滞”单据，点击“申请解除限制”，根据页面提示进行申诉，并在7个工作日内留意审核结果；\n• 小程序处理方法：“微信支付商家助手”小程序 --> “风险处理”点击“交易停滞”单据进行申诉操作，并在7个工作内留意审核结果。', images: ['项目四_3.png'] },
+                { q: '微信提示【Failed(sub_mch_id与sub_appid不匹配 | INVALID_REQUEST)】', a: '原因：公众号/小程序主体与商户号主体不一致。\n解决方法：先确认是否已将正确的公众号/小程序名称和APPID提供给O2O部门进行绑定，如已绑定按下列流程操作：\n1、超管登录微信商户平台（https://pay.weixin.qq.com），同时打开网页（https://pay.weixin.qq.com/index.php/extend/pay_setting/mch#/mchlist），进入【服务商模式账号关联】-->点击【发起】-->【确定】，按照提示完成操作；\n2、公众号/小程序超管登录公众平台（https://mp.weixin.qq.com）-->【支付与交易】-->【微信支付】-->【代关联商户号（服务商模式）】--【确认】。', images: ['项目四_4.png'] },
+                { q: '支付宝提示【Failed（应用未上线）isv.not-online-app | Insufficient Conditions | 40003】', a: '原因：新建应用未通过审核。\n解决方法：超管登录支付宝开放平台（open.alipay.com) -->【控制台】--> 查看新建应用是否审核通过，显示已上线。如未通过查看原因重新提交审核。', images: ['项目四_5.png'] },
+                { q: '支付宝提示【Failed商户协议状态非正常状态】', a: '原因：1）当面付/JSAPI未开通或状态异常；2）该支付宝账户长时间没有使用。\n解决方法：\n1）超管登录支付宝商家平台（b.alipay.com) -->【产品中心】--> 查看【当面付】/【JSAPI】是否开通且正常状态；\n2）超管登录支付宝商家平台（b.alipay.com）右上角消息中心，查看相关通知，并进行恢复；没有相关通知，可通过以下链接进行激活：\n电脑端：https://rccust.alipay.com/disposal/reactive?taskCode=ace3a0703aa550add54a8296f9963978\n手机端：https://render.alipay.com/p/w/mix-h5/inactive-merchants.html?taskCode=ace3a0703aa550add54a8296f9963978', images: ['项目四_6.png'] },
+                { q: '支付宝提示【卖家收款受限，已通过卖家，请联系卖家处理或稍后重试】', a: '解决方法：\n1、超管登录支付宝商家平台（b.alipay.com）右上角【消息中心】查看是否有风控限制，根据页面提示，提交申诉材料并等待审核通过；\n2、如没有收到相关通知，请拨打支付宝客服电话95188-3或400 758 5858 处理。', images: ['项目四_7.png'] },
+                { q: '支付宝静态二维码支付时，提示【Failed（ISV权限不足，建议在开发者中心检查对应功能是否已经添加】', a: '解决方法：联系O2O部门，将【场景合规】改成【场景定制】。', images: ['项目四_8.png'] },
+                { q: '10、石基支付扫码点餐时，提示【Failed（MCG01100 | 渠道系统异常）】', a: '解决方法：需提供同主体的公众号/小程序APPID在石基支付后台进行配置绑定。', images: ['项目四_9.png'] },
+                { q: '石基支付提示【Merchant is not opened this channel】', a: '解决方法：\n1、确认支付渠道号是否配置正确；\n2、确认石基支付平台对应渠道是否已开通且状态正常。', images: ['项目四_10.png'] }
+            ]
         }
-      }
-      addMsg("bot", html);
-    } else {
-      // 低置信度：列出最接近的几条供点选
-      const top = results.filter(r => r.score > 0.08).slice(0, 4);
-      let html = "这个问题我还不确定，最接近的可能是以下几条，点一下看看：";
-      if (top.length === 0) {
-        html = "抱歉，知识库里暂时没有匹配到这个问题的答案。\n你可以点击右上角「📘 录入说明」把它补充进去。";
-      } else {
-        const items = top
-          .map(r => '<span class="related-item" onclick="askById(' + r.entry.id + ')">• ' + esc(r.entry.question) + "</span>")
-          .join("");
-        html += '<div class="related">' + items + "</div>";
-      }
-      addMsg("bot", html);
+    ];
+
+    let currentProjectIndex = 0;
+
+    function escapeHtml(text) {
+        return text.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[m]));
     }
-  }, 480);
-}
 
-// —— 快捷提问 chips ——
-function renderChips() {
-  const picks = [1, 3, 101, 201, 301, 311, 401, 406, 412, 104];
-  const el = document.getElementById("chips");
-  el.innerHTML = "";
-  picks.forEach(id => {
-    const e = knowledgeBase.find(x => x.id === id);
-    if (!e) return;
-    const b = document.createElement("button");
-    b.className = "chip";
-    b.textContent = e.question;
-    b.onclick = () => { inputEl.value = e.question; send(); };
-    el.appendChild(b);
-  });
-}
-
-// —— 侧边知识库 ——
-let currentFilter = "all";
-function setFilter(f) {
-  currentFilter = f;
-  document.querySelectorAll(".filter-btn").forEach(b => b.classList.toggle("active", b.dataset.filter === f));
-  renderKb();
-}
-function renderKb() {
-  const list = document.getElementById("kbList");
-  list.innerHTML = "";
-  const items = knowledgeBase.filter(e => currentFilter === "all" || e.category === currentFilter);
-  document.getElementById("sideCount").textContent = items.length + " 条";
-  items.forEach(e => {
-    const div = document.createElement("div");
-    div.className = "kb-item";
-    div.innerHTML = '<div class="ki-q">' + esc(e.question) + "</div><div class=\"ki-a\">" + esc(e.answer.split("\n")[0]) + "</div>";
-    div.onclick = () => askById(e.id);
-    list.appendChild(div);
-  });
-}
-
-// —— 帮助弹层 ——
-function openHelp() { document.getElementById("helpMask").classList.add("show"); }
-function closeHelp() { document.getElementById("helpMask").classList.remove("show"); }
-
-// —— 侧栏开关 ——
-let isMobile = window.innerWidth <= 768;
-let sideOpen = !isMobile;
-function toggleSide() {
-  sideOpen = !sideOpen;
-  const side = document.getElementById("side");
-  const backdrop = document.getElementById("sideBackdrop");
-  if (isMobile) {
-    side.classList.toggle("open", sideOpen);
-    backdrop.classList.toggle("show", sideOpen);
-  } else {
-    side.style.display = sideOpen ? "flex" : "none";
-  }
-}
-// 移动端默认收起
-if (isMobile) {
-  document.getElementById("side").classList.remove("open");
-}
-
-// 窗口尺寸变化时重置侧栏状态
-window.addEventListener("resize", function() {
-  const nowMobile = window.innerWidth <= 768;
-  if (nowMobile !== isMobile) {
-    isMobile = nowMobile;
-    const side = document.getElementById("side");
-    const backdrop = document.getElementById("sideBackdrop");
-    if (isMobile) {
-      side.style.display = "";
-      side.classList.remove("open");
-      backdrop.classList.remove("show");
-      sideOpen = false;
-    } else {
-      side.style.display = "flex";
-      side.classList.remove("open");
-      backdrop.classList.remove("show");
-      sideOpen = true;
+    function linkify(text) {
+        return escapeHtml(text).replace(/(https?:\/\/[^\s\)\]\n]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
     }
-  }
-});
 
-// —— 初始化 ——
-document.getElementById("kbCount").textContent = knowledgeBase.length;
-renderChips();
-renderKb();
-inputEl.focus();
-</script>
+    function tokenize(text) {
+        const clean = text.toLowerCase().replace(/[^\u4e00-\u9fa5a-z0-9]/g, ' ').trim();
+        return clean.split(/\s+/).filter(t => t.length > 0);
+    }
+
+    function getUniqueChars(text) {
+        const chars = [];
+        for (const ch of text) {
+            if (/[\u4e00-\u9fa5a-z0-9]/.test(ch)) chars.push(ch);
+        }
+        return chars;
+    }
+
+    function scoreItem(query, item) {
+        if (!query) return 0;
+        const qTokens = tokenize(query);
+        const qChars = [...new Set(getUniqueChars(query))];
+        const haystack = (item.q + ' ' + item.a).toLowerCase();
+        const qLower = item.q.toLowerCase();
+
+        let score = 0;
+
+        // 问题完全包含查询 -> 高权重
+        if (qLower.includes(query.toLowerCase())) score += 50;
+
+        // 查询完全包含问题 -> 高权重
+        if (query.toLowerCase().includes(qLower)) score += 40;
+
+        // 词匹配
+        for (const t of qTokens) {
+            if (t.length === 1) {
+                if (haystack.includes(t)) score += 1;
+            } else {
+                const idx = haystack.indexOf(t);
+                if (idx !== -1) {
+                    if (qLower.includes(t)) score += 8;
+                    else score += 4;
+                }
+            }
+        }
+
+        // 字符匹配（用于中文单字覆盖）
+        let charHit = 0;
+        for (const ch of qChars) {
+            if (haystack.includes(ch)) charHit++;
+        }
+        if (qChars.length > 0) score += (charHit / qChars.length) * 10;
+
+        // 连续子串匹配
+        for (let len = Math.min(6, query.length); len >= 2; len--) {
+            for (let i = 0; i <= query.length - len; i++) {
+                const sub = query.slice(i, i + len).toLowerCase();
+                if (sub.length >= 2 && /[\u4e00-\u9fa5]/.test(sub) && haystack.includes(sub)) {
+                    score += len * 1.5;
+                }
+            }
+        }
+
+        return score;
+    }
+
+    function renderTabs() {
+        const tabs = document.getElementById('tabs');
+        tabs.innerHTML = projects.map((p, i) =>
+            `<button class="tab ${i === currentProjectIndex ? 'active' : ''}" data-idx="${i}" role="tab" aria-selected="${i === currentProjectIndex}">
+                ${p.name}
+            </button>`
+        ).join('');
+
+        tabs.querySelectorAll('.tab').forEach(btn => {
+            btn.addEventListener('click', () => {
+                currentProjectIndex = parseInt(btn.dataset.idx);
+                document.getElementById('currentBadge').textContent = projects[currentProjectIndex].name + '：' + projects[currentProjectIndex].title;
+                renderTabs();
+                const input = document.getElementById('searchInput');
+                if (input.value.trim()) search(input.value.trim());
+                else showProjectIntro();
+            });
+        });
+    }
+
+    function showProjectIntro() {
+        const p = projects[currentProjectIndex];
+        const area = document.getElementById('resultArea');
+        const suggestions = p.items.slice(0, 8).map(it => it.q.replace(/^\d+、/, '').replace(/^微信提示|支付宝提示/, ''));
+        area.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-icon">📚</div>
+                <div class="empty-title">${p.name}：${p.title}</div>
+                <p>请输入关键词或问题，机器人将在「${p.name}」的 ${p.items.length} 条内容中为您匹配答案。</p>
+                <div class="suggestion-list">
+                    ${suggestions.map(s => `<span class="suggestion-chip">${escapeHtml(s.length > 20 ? s.slice(0, 20) + '…' : s)}</span>`).join('')}
+                </div>
+            </div>
+        `;
+        area.querySelectorAll('.suggestion-chip').forEach(chip => {
+            chip.addEventListener('click', () => {
+                document.getElementById('searchInput').value = chip.textContent;
+                search(chip.textContent);
+            });
+        });
+    }
+
+    function search(query) {
+        if (!query) { showProjectIntro(); return; }
+        const p = projects[currentProjectIndex];
+        const results = p.items
+            .map(item => ({ item, score: scoreItem(query, item) }))
+            .filter(r => r.score > 0)
+            .sort((a, b) => b.score - a.score)
+            .slice(0, 10);
+
+        const area = document.getElementById('resultArea');
+        if (results.length === 0) {
+            area.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon">🔍</div>
+                    <div class="empty-title">未找到匹配结果</div>
+                    <p>在当前项目「${p.name}：${p.title}」中没有找到与“${escapeHtml(query)}”相关的内容。</p>
+                    <p>请尝试更换关键词，或切换到其他项目标签查询。</p>
+                </div>
+            `;
+            return;
+        }
+
+        area.innerHTML = results.map((r, idx) => {
+            const imgs = r.item.images || [];
+            const imgHtml = imgs.length ? `
+                <div class="image-grid ${imgs.length === 1 ? 'single' : ''}">
+                    ${imgs.map(img => `<img src="images/${img}" alt="参考图片" loading="lazy" data-full="images/${img}">`).join('')}
+                </div>
+            ` : '';
+            return `
+                <article class="result-card">
+                    <div class="result-q"><span class="q-icon">Q</span><span>${linkify(r.item.q)}</span></div>
+                    <div class="result-a">${linkify(r.item.a)}</div>
+                    ${imgHtml}
+                    <div class="result-meta">
+                        <span>来源：${p.name} · ${p.title}</span>
+                        <span class="score">相关度 ${Math.min(99, Math.round(r.score))}</span>
+                    </div>
+                </article>
+            `;
+        }).join('');
+
+        area.querySelectorAll('.image-grid img').forEach(img => {
+            img.addEventListener('click', () => openLightbox(img.dataset.full));
+        });
+    }
+
+    function openLightbox(src) {
+        const box = document.getElementById('lightbox');
+        document.getElementById('lightboxImg').src = src;
+        box.classList.add('active');
+    }
+
+    function closeLightbox() {
+        document.getElementById('lightbox').classList.remove('active');
+    }
+
+    document.getElementById('searchBtn').addEventListener('click', () => {
+        search(document.getElementById('searchInput').value.trim());
+    });
+
+    document.getElementById('searchInput').addEventListener('keydown', e => {
+        if (e.key === 'Enter') search(e.target.value.trim());
+    });
+
+    document.getElementById('lightboxClose').addEventListener('click', closeLightbox);
+    document.getElementById('lightbox').addEventListener('click', e => {
+        if (e.target.id === 'lightbox') closeLightbox();
+    });
+
+    renderTabs();
+    document.getElementById('currentBadge').textContent = projects[currentProjectIndex].name + '：' + projects[currentProjectIndex].title;
+    showProjectIntro();
+    </script>
 </body>
 </html>
