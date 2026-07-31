@@ -322,13 +322,13 @@
     <main class="container">
         <div class="search-box">
             <div class="current-project">
-                当前项目：<span class="badge" id="currentBadge">项目一</span>
+                搜索范围：<span class="badge" id="currentBadge">全部项目</span>
             </div>
             <div class="search-input-wrap">
-                <input type="text" class="search-input" id="searchInput" placeholder="请输入您的问题，例如：如何修改结算银行卡？" autocomplete="off">
+                <input type="text" class="search-input" id="searchInput" placeholder="输入关键词，如：结算银行卡、退款、报错…" autocomplete="off">
                 <button class="search-btn" id="searchBtn">搜索</button>
             </div>
-            <div class="search-tips">提示：切换上方项目标签可在不同项目内查找，系统不会跨项目匹配。</div>
+            <div class="search-tips">提示：默认搜索全部项目，点击上方标签可限定在单个项目内搜索。</div>
         </div>
 
         <section id="resultArea" aria-live="polite"></section>
@@ -347,7 +347,7 @@
     const projects = [
         {
             id: 'p1',
-            name: '项目一',
+            name: '调研表填写答疑',
             title: '调研表填写答疑',
             items: [
                 {
@@ -411,7 +411,7 @@
         },
         {
             id: 'p2',
-            name: '项目二',
+            name: '微信相关问题',
             title: '微信相关问题',
             items: [
                 { q: '微信账户如何修改结算银行账户？', a: '【商户平台】\n• 超级管理员登录商户平台（https://pay.weixin.qq.com），点击【账户中心-> 银行结算账户-> 修改账户】，若审核失败可点击查看详情，修改后重新提交；\n• 点击修改账户，填写新的账户信息；若结算账户户名和商户号最新的主体名称不一致、或户名中有括号需要修改全半角，可以点击账户户名旁的“编辑”进行修改、确认无误后点击“保存”；提交后等待审核。\n\n【商家助手小程序】\n• 关注商家助手小程序，登录微信【发现】-->【小程序】--> 搜索小程序【微信支付商家助手】；\n• 超级管理员权限登录商家助手小程序，点击公司名称 -->【结算银行账户】；\n• 安全验证后，点击修改账户，填写新的账户信息；若结算账户户名和商户号最新的主体名称不一致、或户名中有括号需要修改全半角，可以点击账户户名进行修改；提交后等待审核。' },
@@ -455,7 +455,7 @@
         },
         {
             id: 'p3',
-            name: '项目三',
+            name: '支付宝相关问题',
             title: '支付宝相关问题',
             items: [
                 { q: '1、如何注册支付宝账号？', a: '参考官方文档，自行完成支付宝账户的注册和实名认证流程，步骤如下：https://cshall.alipay.com/enterprise/knowledgeDetail.htm?knowledgeId=201602847673' },
@@ -480,7 +480,7 @@
         },
         {
             id: 'p4',
-            name: '项目四',
+            name: '报错解答',
             title: '报错解答',
             items: [
                 { q: '微信提示【涉嫌小程序交易异常】', a: '可通过商户号超级管理员通过微信进入【微信支付商家助手】小程序，点击【风险处理】，找到【涉嫌小程序交易异常】模块，按照申诉模版填写对应的资料，通过审核后即可完成申诉。', images: ['项目四_0.png'] },
@@ -498,7 +498,9 @@
         }
     ];
 
-    let currentProjectIndex = 0;
+    let currentProjectIndex = -1; // -1 = 全部项目
+
+    const totalItems = projects.reduce((sum, p) => sum + p.items.length, 0);
 
     function escapeHtml(text) {
         return text.replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[m]));
@@ -571,16 +573,17 @@
 
     function renderTabs() {
         const tabs = document.getElementById('tabs');
-        tabs.innerHTML = projects.map((p, i) =>
-            `<button class="tab ${i === currentProjectIndex ? 'active' : ''}" data-idx="${i}" role="tab" aria-selected="${i === currentProjectIndex}">
-                ${p.name}
-            </button>`
-        ).join('');
+        tabs.innerHTML = `<button class="tab ${currentProjectIndex === -1 ? 'active' : ''}" data-idx="-1" role="tab" aria-selected="${currentProjectIndex === -1}">全部</button>` +
+            projects.map((p, i) =>
+                `<button class="tab ${i === currentProjectIndex ? 'active' : ''}" data-idx="${i}" role="tab" aria-selected="${i === currentProjectIndex}">
+                    ${p.name}
+                </button>`
+            ).join('');
 
         tabs.querySelectorAll('.tab').forEach(btn => {
             btn.addEventListener('click', () => {
                 currentProjectIndex = parseInt(btn.dataset.idx);
-                document.getElementById('currentBadge').textContent = projects[currentProjectIndex].name + '：' + projects[currentProjectIndex].title;
+                updateBadge();
                 renderTabs();
                 const input = document.getElementById('searchInput');
                 if (input.value.trim()) search(input.value.trim());
@@ -589,69 +592,132 @@
         });
     }
 
+    function updateBadge() {
+        const badge = document.getElementById('currentBadge');
+        if (currentProjectIndex === -1) {
+            badge.textContent = '全部项目（' + projects.length + '个项目，共 ' + totalItems + ' 条问答）';
+        } else {
+            const p = projects[currentProjectIndex];
+            badge.textContent = p.name + '（' + p.items.length + ' 条问答）';
+        }
+    }
+
     function showProjectIntro() {
-        const p = projects[currentProjectIndex];
         const area = document.getElementById('resultArea');
-        const suggestions = p.items.slice(0, 8).map(it => it.q.replace(/^\d+、/, '').replace(/^微信提示|支付宝提示/, ''));
-        area.innerHTML = `
-            <div class="empty-state">
-                <div class="empty-icon">📚</div>
-                <div class="empty-title">${p.name}：${p.title}</div>
-                <p>请输入关键词或问题，机器人将在「${p.name}」的 ${p.items.length} 条内容中为您匹配答案。</p>
-                <div class="suggestion-list">
-                    ${suggestions.map(s => `<span class="suggestion-chip">${escapeHtml(s.length > 20 ? s.slice(0, 20) + '…' : s)}</span>`).join('')}
+        if (currentProjectIndex === -1) {
+            // 全部项目：展示汇总和各模块精选
+            const allSuggestions = [];
+            projects.forEach(p => {
+                p.items.slice(0, 3).forEach(it => {
+                    allSuggestions.push({ project: p, text: it.q.replace(/^\d+、/, '').replace(/^(微信|支付宝)提示【?/, '') });
+                });
+            });
+            area.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon">🤖</div>
+                    <div class="empty-title">智能问答机器人</div>
+                    <p>共覆盖 <strong>${projects.length}</strong> 个项目、<strong>${totalItems}</strong> 条问答。输入关键词，系统将在全部项目中为您匹配最相关的答案。</p>
+                    <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:12px;">
+                        ${projects.map(p => `<span style="background:var(--card);border:1px solid var(--border);padding:6px 12px;border-radius:16px;font-size:13px;">${p.name}（${p.items.length}条）</span>`).join('')}
+                    </div>
+                    <div class="suggestion-list" style="margin-top:20px;">
+                        ${allSuggestions.slice(0, 12).map(s => `<span class="suggestion-chip" title="${s.project.name}">【${s.project.name}】${escapeHtml(s.text.length > 16 ? s.text.slice(0, 16) + '…' : s.text)}</span>`).join('')}
+                    </div>
                 </div>
-            </div>
-        `;
+            `;
+        } else {
+            const p = projects[currentProjectIndex];
+            const suggestions = p.items.slice(0, 8).map(it => it.q.replace(/^\d+、/, '').replace(/^(微信|支付宝)提示【?/, ''));
+            area.innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-icon">📚</div>
+                    <div class="empty-title">${p.name}</div>
+                    <p>请输入关键词或问题，系统将在「${p.name}」的 ${p.items.length} 条内容中为您匹配答案。</p>
+                    <div class="suggestion-list">
+                        ${suggestions.map(s => `<span class="suggestion-chip">${escapeHtml(s.length > 20 ? s.slice(0, 20) + '…' : s)}</span>`).join('')}
+                    </div>
+                </div>
+            `;
+        }
         area.querySelectorAll('.suggestion-chip').forEach(chip => {
             chip.addEventListener('click', () => {
-                document.getElementById('searchInput').value = chip.textContent;
-                search(chip.textContent);
+                const text = chip.textContent.replace(/^【[^】]+】/, '');
+                document.getElementById('searchInput').value = text;
+                search(text);
             });
         });
     }
 
     function search(query) {
         if (!query) { showProjectIntro(); return; }
-        const p = projects[currentProjectIndex];
-        const results = p.items
-            .map(item => ({ item, score: scoreItem(query, item) }))
-            .filter(r => r.score > 0)
-            .sort((a, b) => b.score - a.score)
-            .slice(0, 10);
+
+        let results;
+        if (currentProjectIndex === -1) {
+            // 全局搜索：在所有项目中匹配
+            results = [];
+            projects.forEach(project => {
+                project.items.forEach(item => {
+                    const s = scoreItem(query, item);
+                    if (s > 0) results.push({ item, project, score: s });
+                });
+            });
+            results.sort((a, b) => b.score - a.score);
+            results = results.slice(0, 15);
+        } else {
+            const p = projects[currentProjectIndex];
+            results = p.items
+                .map(item => ({ item, project: p, score: scoreItem(query, item) }))
+                .filter(r => r.score > 0)
+                .sort((a, b) => b.score - a.score)
+                .slice(0, 10);
+        }
 
         const area = document.getElementById('resultArea');
+        const scopeLabel = currentProjectIndex === -1 ? '全部项目' : projects[currentProjectIndex].name;
+
         if (results.length === 0) {
             area.innerHTML = `
                 <div class="empty-state">
                     <div class="empty-icon">🔍</div>
                     <div class="empty-title">未找到匹配结果</div>
-                    <p>在当前项目「${p.name}：${p.title}」中没有找到与“${escapeHtml(query)}”相关的内容。</p>
-                    <p>请尝试更换关键词，或切换到其他项目标签查询。</p>
+                    <p>在「${scopeLabel}」中没有找到与"${escapeHtml(query)}"相关的内容。</p>
+                    <p>请尝试更换关键词后重试。</p>
                 </div>
             `;
             return;
         }
 
-        area.innerHTML = results.map((r, idx) => {
-            const imgs = r.item.images || [];
-            const imgHtml = imgs.length ? `
-                <div class="image-grid ${imgs.length === 1 ? 'single' : ''}">
-                    ${imgs.map(img => `<img src="images/${img}" alt="参考图片" loading="lazy" data-full="images/${img}">`).join('')}
-                </div>
-            ` : '';
-            return `
-                <article class="result-card">
-                    <div class="result-q"><span class="q-icon">Q</span><span>${linkify(r.item.q)}</span></div>
-                    <div class="result-a">${linkify(r.item.a)}</div>
-                    ${imgHtml}
-                    <div class="result-meta">
-                        <span>来源：${p.name} · ${p.title}</span>
-                        <span class="score">相关度 ${Math.min(99, Math.round(r.score))}</span>
+        // 统计来自哪些项目
+        const projectCounts = {};
+        results.forEach(r => {
+            projectCounts[r.project.name] = (projectCounts[r.project.name] || 0) + 1;
+        });
+        const summaryParts = Object.entries(projectCounts).map(([k, v]) => `${k}(${v}条)`).join('、');
+
+        area.innerHTML = `
+            <div style="font-size:13px;color:var(--text-secondary);margin-bottom:12px;">
+                在「${scopeLabel}」中搜到 <strong>${results.length}</strong> 条匹配结果（${summaryParts}）
+            </div>
+            ${results.map(r => {
+                const imgs = r.item.images || [];
+                const imgHtml = imgs.length ? `
+                    <div class="image-grid ${imgs.length === 1 ? 'single' : ''}">
+                        ${imgs.map(img => `<img src="images/${img}" alt="参考图片" loading="lazy" data-full="images/${img}">`).join('')}
                     </div>
-                </article>
-            `;
-        }).join('');
+                ` : '';
+                return `
+                    <article class="result-card">
+                        <div class="result-q"><span class="q-icon">Q</span><span>${linkify(r.item.q)}</span></div>
+                        <div class="result-a">${linkify(r.item.a)}</div>
+                        ${imgHtml}
+                        <div class="result-meta">
+                            <span>来源：${r.project.name}</span>
+                            <span class="score">相关度 ${Math.min(99, Math.round(r.score))}</span>
+                        </div>
+                    </article>
+                `;
+            }).join('')}
+        `;
 
         area.querySelectorAll('.image-grid img').forEach(img => {
             img.addEventListener('click', () => openLightbox(img.dataset.full));
@@ -682,7 +748,7 @@
     });
 
     renderTabs();
-    document.getElementById('currentBadge').textContent = projects[currentProjectIndex].name + '：' + projects[currentProjectIndex].title;
+    updateBadge();
     showProjectIntro();
     </script>
 </body>
