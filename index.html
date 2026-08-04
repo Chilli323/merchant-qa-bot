@@ -5,29 +5,51 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>智能问答机器人</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         :root {
-            --primary: #2563eb;
-            --primary-dark: #1d4ed8;
-            --primary-light: #dbeafe;
-            --bg: #f8fafc;
+            --primary: #4f46e5;
+            --primary-dark: #4338ca;
+            --primary-light: #eef2ff;
+            --primary-glow: rgba(79,70,229,0.15);
+            --bg: #f1f5f9;
+            --bg-subtle: #f8fafc;
             --card: #ffffff;
-            --text: #1e293b;
+            --card-hover: #feffff;
+            --text: #0f172a;
             --text-secondary: #64748b;
+            --text-tertiary: #94a3b8;
             --border: #e2e8f0;
-            --shadow: 0 1px 3px rgba(0,0,0,0.08);
-            --shadow-lg: 0 10px 25px rgba(0,0,0,0.1);
+            --border-hover: #cbd5e1;
+            --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+            --shadow: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -2px rgba(0,0,0,0.05);
+            --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.08), 0 4px 6px -4px rgba(0,0,0,0.05);
+            --shadow-xl: 0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.04);
+            --radius-sm: 8px;
+            --radius: 12px;
+            --radius-lg: 16px;
+            --radius-xl: 20px;
+            --header-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
         @media (prefers-color-scheme: dark) {
             :root {
-                --bg: #0f172a;
-                --card: #1e293b;
+                --primary: #818cf8;
+                --primary-dark: #6366f1;
+                --primary-light: rgba(99,102,241,0.15);
+                --primary-glow: rgba(129,140,248,0.2);
+                --bg: #0a0f1e;
+                --bg-subtle: #0f172a;
+                --card: #161e2e;
+                --card-hover: #1a2336;
                 --text: #f1f5f9;
                 --text-secondary: #94a3b8;
-                --border: #334155;
-                --primary-light: rgba(37,99,235,0.2);
-                --shadow: 0 1px 3px rgba(0,0,0,0.3);
-                --shadow-lg: 0 10px 25px rgba(0,0,0,0.4);
+                --text-tertiary: #64748b;
+                --border: #1e293b;
+                --border-hover: #334155;
+                --shadow-sm: 0 1px 2px rgba(0,0,0,0.2);
+                --shadow: 0 4px 6px -1px rgba(0,0,0,0.3), 0 2px 4px -2px rgba(0,0,0,0.2);
+                --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.4), 0 4px 6px -4px rgba(0,0,0,0.2);
+                --shadow-xl: 0 20px 25px -5px rgba(0,0,0,0.5), 0 8px 10px -6px rgba(0,0,0,0.3);
+                --header-gradient: linear-gradient(135deg, #4c1d95 0%, #1e3a5f 100%);
             }
         }
         body {
@@ -36,272 +58,505 @@
             color: var(--text);
             line-height: 1.6;
             min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
         }
+        /* ===== Header ===== */
         .header {
-            background: linear-gradient(135deg, var(--primary) 0%, #3b82f6 100%);
+            background: var(--header-gradient);
             color: white;
-            padding: 16px 0;
+            padding: 0;
             position: sticky;
             top: 0;
             z-index: 100;
-            box-shadow: 0 2px 8px rgba(37,99,235,0.3);
+            box-shadow: 0 4px 20px rgba(102,126,234,0.15);
+            overflow: hidden;
+        }
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%; right: -20%;
+            width: 300px; height: 300px;
+            background: radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+        .header::after {
+            content: '';
+            position: absolute;
+            bottom: -30%; left: -10%;
+            width: 200px; height: 200px;
+            background: radial-gradient(circle, rgba(255,255,255,0.05) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
         }
         .header-inner {
-            max-width: 1100px;
+            max-width: 920px;
             margin: 0 auto;
-            padding: 0 16px;
+            padding: 18px 20px 14px;
+            position: relative;
+            z-index: 1;
         }
         .header-top {
             display: flex;
             align-items: center;
-            gap: 12px;
-            margin-bottom: 12px;
+            gap: 14px;
+            margin-bottom: 14px;
         }
         .robot-icon {
-            width: 40px; height: 40px;
-            background: rgba(255,255,255,0.2);
-            border-radius: 12px;
+            width: 44px; height: 44px;
+            background: rgba(255,255,255,0.18);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 14px;
             display: flex; align-items: center; justify-content: center;
-            font-size: 22px;
+            font-size: 24px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
         }
-        .header h1 { font-size: 20px; font-weight: 600; }
-        .header p { font-size: 13px; opacity: 0.9; }
+        .header h1 {
+            font-size: 21px;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+        }
+        .header p {
+            font-size: 12.5px;
+            opacity: 0.85;
+            margin-top: 1px;
+        }
         .tabs {
             display: flex;
-            gap: 6px;
+            gap: 7px;
             overflow-x: auto;
             -webkit-overflow-scrolling: touch;
             scrollbar-width: none;
-            padding-bottom: 4px;
+            padding: 0 1px 2px;
         }
         .tabs::-webkit-scrollbar { display: none; }
         .tab {
             flex: 0 0 auto;
-            padding: 8px 16px;
-            border-radius: 20px;
-            background: rgba(255,255,255,0.15);
+            padding: 8px 18px;
+            border-radius: 22px;
+            background: rgba(255,255,255,0.12);
+            backdrop-filter: blur(8px);
             color: white;
             font-size: 14px;
             cursor: pointer;
             white-space: nowrap;
-            transition: all 0.2s;
-            border: none;
+            transition: all 0.25s cubic-bezier(0.4,0,0.2,1);
+            border: 1px solid rgba(255,255,255,0.15);
             font-weight: 500;
         }
-        .tab.active { background: white; color: var(--primary); }
-        .tab:hover:not(.active) { background: rgba(255,255,255,0.25); }
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-            padding: 20px 16px 60px;
+        .tab.active {
+            background: white;
+            color: #4f46e5;
+            font-weight: 600;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.15);
         }
+        @media (prefers-color-scheme: dark) {
+            .tab.active { color: #818cf8; }
+        }
+        .tab:hover:not(.active) {
+            background: rgba(255,255,255,0.2);
+            border-color: rgba(255,255,255,0.3);
+        }
+        /* ===== Container ===== */
+        .container {
+            max-width: 920px;
+            margin: 0 auto;
+            padding: 24px 20px 80px;
+        }
+        /* ===== Search Box ===== */
         .search-box {
             background: var(--card);
-            border-radius: 16px;
-            padding: 16px;
-            box-shadow: var(--shadow);
-            margin-bottom: 20px;
+            border-radius: var(--radius-lg);
+            padding: 20px;
+            box-shadow: var(--shadow-lg);
+            margin-bottom: 24px;
             border: 1px solid var(--border);
-        }
-        .search-input-wrap {
-            display: flex;
-            gap: 10px;
-        }
-        .search-input {
-            flex: 1;
-            padding: 12px 16px;
-            border: 2px solid var(--border);
-            border-radius: 12px;
-            font-size: 16px;
-            background: var(--bg);
-            color: var(--text);
-            outline: none;
-            transition: border-color 0.2s;
-        }
-        .search-input:focus { border-color: var(--primary); }
-        .search-btn {
-            padding: 12px 24px;
-            background: var(--primary);
-            color: white;
-            border: none;
-            border-radius: 12px;
-            font-size: 16px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-        .search-btn:hover { background: var(--primary-dark); }
-        .search-btn:active { transform: scale(0.98); }
-        .search-tips {
-            margin-top: 10px;
-            font-size: 13px;
-            color: var(--text-secondary);
+            position: relative;
         }
         .current-project {
             display: flex;
             align-items: center;
             gap: 8px;
-            margin-bottom: 16px;
-            font-size: 15px;
+            margin-bottom: 14px;
+            font-size: 14px;
             color: var(--text-secondary);
         }
         .current-project .badge {
             background: var(--primary-light);
             color: var(--primary);
-            padding: 4px 12px;
-            border-radius: 12px;
+            padding: 4px 14px;
+            border-radius: 20px;
             font-weight: 600;
             font-size: 13px;
         }
+        .search-input-wrap {
+            display: flex;
+            gap: 10px;
+            position: relative;
+        }
+        .search-icon-wrap {
+            position: relative;
+            flex: 1;
+        }
+        .search-icon-wrap::before {
+            content: '';
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 18px; height: 18px;
+            background: var(--text-tertiary);
+            -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.3-4.3'/%3E%3C/svg%3E") no-repeat center / contain;
+            mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.5'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cpath d='m21 21-4.3-4.3'/%3E%3C/svg%3E") no-repeat center / contain;
+            pointer-events: none;
+            transition: background 0.2s;
+        }
+        .search-input {
+            width: 100%;
+            padding: 13px 16px 13px 44px;
+            border: 2px solid var(--border);
+            border-radius: var(--radius);
+            font-size: 15px;
+            background: var(--bg-subtle);
+            color: var(--text);
+            outline: none;
+            transition: all 0.2s;
+        }
+        .search-input::placeholder { color: var(--text-tertiary); }
+        .search-input:focus {
+            border-color: var(--primary);
+            background: var(--card);
+            box-shadow: 0 0 0 4px var(--primary-glow);
+        }
+        .search-input:focus ~ .search-icon-wrap::before,
+        .search-input-wrap:focus-within .search-icon-wrap::before {
+            background: var(--primary);
+        }
+        .search-btn {
+            padding: 13px 26px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: var(--radius);
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 2px 8px var(--primary-glow);
+        }
+        .search-btn:hover {
+            background: var(--primary-dark);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px var(--primary-glow);
+        }
+        .search-btn:active { transform: translateY(0); }
+        .search-tips {
+            margin-top: 12px;
+            font-size: 13px;
+            color: var(--text-tertiary);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .search-tips::before { content: '\1F4A1'; font-size: 14px; }
+        /* ===== Results ===== */
         .result-list { display: flex; flex-direction: column; gap: 16px; }
         .result-card {
             background: var(--card);
-            border-radius: 16px;
-            padding: 20px;
+            border-radius: var(--radius-lg);
+            padding: 22px 24px;
             box-shadow: var(--shadow);
             border: 1px solid var(--border);
-            transition: transform 0.2s, box-shadow 0.2s;
-            animation: fadeIn 0.3s ease-out;
+            transition: all 0.25s cubic-bezier(0.4,0,0.2,1);
+            animation: slideUp 0.4s cubic-bezier(0.4,0,0.2,1) both;
+            position: relative;
+            overflow: hidden;
         }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
+        .result-card::before {
+            content: '';
+            position: absolute;
+            left: 0; top: 0; bottom: 0;
+            width: 4px;
+            background: var(--primary);
+            opacity: 0;
+            transition: opacity 0.25s;
+        }
+        .result-card:hover {
+            box-shadow: var(--shadow-xl);
+            border-color: var(--border-hover);
+            background: var(--card-hover);
+            transform: translateY(-2px);
+        }
+        .result-card:hover::before { opacity: 1; }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(16px); }
             to { opacity: 1; transform: translateY(0); }
         }
-        .result-card:hover { box-shadow: var(--shadow-lg); }
+        .result-card:nth-child(1) { animation-delay: 0ms; }
+        .result-card:nth-child(2) { animation-delay: 40ms; }
+        .result-card:nth-child(3) { animation-delay: 80ms; }
+        .result-card:nth-child(4) { animation-delay: 120ms; }
+        .result-card:nth-child(5) { animation-delay: 160ms; }
+        .result-card:nth-child(6) { animation-delay: 200ms; }
+        .result-card:nth-child(n+7) { animation-delay: 240ms; }
         .result-q {
             font-size: 17px;
             font-weight: 600;
             color: var(--text);
             margin-bottom: 12px;
             display: flex;
-            gap: 8px;
+            gap: 10px;
             align-items: flex-start;
+            line-height: 1.5;
         }
         .q-icon {
-            flex: 0 0 24px;
-            width: 24px; height: 24px;
+            flex: 0 0 26px;
+            width: 26px; height: 26px;
             background: var(--primary);
             color: white;
-            border-radius: 6px;
+            border-radius: 8px;
             display: flex; align-items: center; justify-content: center;
             font-size: 13px; font-weight: 700;
+            box-shadow: 0 2px 6px var(--primary-glow);
         }
         .result-a {
             color: var(--text-secondary);
             font-size: 15px;
-            line-height: 1.8;
+            line-height: 1.85;
             white-space: pre-wrap;
+            padding-left: 36px;
         }
-        .result-a a { color: var(--primary); word-break: break-all; }
+        .result-a a {
+            color: var(--primary);
+            word-break: break-all;
+            text-decoration: none;
+            border-bottom: 1px dashed var(--primary);
+            transition: border-style 0.2s;
+        }
+        .result-a a:hover { border-bottom-style: solid; }
         .result-meta {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-top: 14px;
+            margin-top: 16px;
             padding-top: 14px;
+            margin-left: 36px;
             border-top: 1px solid var(--border);
             font-size: 13px;
-            color: var(--text-secondary);
+            color: var(--text-tertiary);
         }
-        .score { font-weight: 600; color: var(--primary); }
+        .result-meta .source {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .result-meta .source::before { content: '\1F4C1'; font-size: 12px; }
+        .score {
+            font-weight: 600;
+            color: var(--primary);
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .score::before { content: '\1F4CA'; font-size: 12px; }
+        /* ===== Image Grid ===== */
         .image-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-            gap: 10px;
-            margin-top: 14px;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 12px;
+            margin: 14px 0 0 36px;
         }
         .image-grid img {
             width: 100%;
-            height: 120px;
+            height: 130px;
             object-fit: cover;
-            border-radius: 10px;
+            border-radius: var(--radius);
             cursor: pointer;
             border: 1px solid var(--border);
-            transition: transform 0.2s;
+            transition: all 0.25s;
+            background: var(--bg-subtle);
         }
-        .image-grid img:hover { transform: scale(1.03); }
-        .image-grid.single { grid-template-columns: minmax(140px, 320px); }
+        .image-grid img:hover {
+            transform: scale(1.04);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--primary);
+        }
+        .image-grid.single { grid-template-columns: minmax(150px, 340px); }
+        .image-grid.single img { height: 200px; }
+        /* ===== Empty State ===== */
         .empty-state {
             text-align: center;
-            padding: 60px 20px;
+            padding: 50px 20px;
             color: var(--text-secondary);
+            animation: fadeIn 0.4s ease-out;
         }
-        .empty-icon { font-size: 56px; margin-bottom: 16px; }
-        .empty-title { font-size: 18px; font-weight: 600; margin-bottom: 8px; color: var(--text); }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .empty-icon {
+            font-size: 60px;
+            margin-bottom: 18px;
+            filter: drop-shadow(0 4px 12px rgba(0,0,0,0.1));
+        }
+        .empty-title {
+            font-size: 19px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: var(--text);
+            letter-spacing: -0.2px;
+        }
+        .empty-state p { margin-bottom: 4px; }
+        .project-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 16px;
+        }
+        .project-tag {
+            background: var(--card);
+            border: 1px solid var(--border);
+            padding: 8px 16px;
+            border-radius: 22px;
+            font-size: 13px;
+            font-weight: 500;
+            box-shadow: var(--shadow-sm);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .project-tag .dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+        }
         .suggestion-list {
             display: flex;
             flex-wrap: wrap;
-            gap: 8px;
+            gap: 9px;
             justify-content: center;
-            margin-top: 16px;
+            margin-top: 20px;
+            max-width: 680px;
+            margin-left: auto;
+            margin-right: auto;
         }
         .suggestion-chip {
             background: var(--card);
             border: 1px solid var(--border);
-            padding: 8px 14px;
-            border-radius: 20px;
-            font-size: 14px;
+            padding: 9px 16px;
+            border-radius: 22px;
+            font-size: 13.5px;
             cursor: pointer;
             transition: all 0.2s;
+            box-shadow: var(--shadow-sm);
+            color: var(--text-secondary);
         }
-        .suggestion-chip:hover { border-color: var(--primary); color: var(--primary); }
+        .suggestion-chip:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: var(--primary-light);
+            transform: translateY(-1px);
+        }
+        /* ===== Footer ===== */
         .footer {
             text-align: center;
-            padding: 30px 16px;
-            color: var(--text-secondary);
+            padding: 32px 16px;
+            color: var(--text-tertiary);
             font-size: 13px;
         }
         .read-only-notice {
             display: inline-flex;
             align-items: center;
-            gap: 6px;
+            gap: 7px;
             background: var(--card);
             border: 1px solid var(--border);
-            padding: 6px 12px;
-            border-radius: 20px;
-            font-size: 12px;
+            padding: 8px 16px;
+            border-radius: 22px;
+            font-size: 12.5px;
+            box-shadow: var(--shadow-sm);
         }
+        /* ===== Lightbox ===== */
         .lightbox {
             display: none;
             position: fixed;
             inset: 0;
-            background: rgba(0,0,0,0.92);
+            background: rgba(0,0,0,0.88);
+            backdrop-filter: blur(8px);
             z-index: 1000;
             align-items: center;
             justify-content: center;
             padding: 20px;
+            animation: fadeIn 0.2s ease-out;
         }
         .lightbox.active { display: flex; }
         .lightbox img {
             max-width: 100%;
             max-height: 90vh;
-            border-radius: 8px;
+            border-radius: 12px;
             object-fit: contain;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            animation: zoomIn 0.3s cubic-bezier(0.4,0,0.2,1);
+        }
+        @keyframes zoomIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
         }
         .lightbox-close {
             position: absolute;
-            top: 20px; right: 20px;
+            top: 24px; right: 24px;
             color: white;
-            font-size: 32px;
+            font-size: 28px;
             cursor: pointer;
             width: 44px; height: 44px;
             display: flex; align-items: center; justify-content: center;
-            background: rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.12);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.15);
             border-radius: 50%;
+            transition: all 0.2s;
         }
+        .lightbox-close:hover {
+            background: rgba(255,255,255,0.2);
+            transform: rotate(90deg);
+        }
+        /* ===== Search Summary ===== */
+        .search-summary {
+            font-size: 13.5px;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+            padding: 10px 16px;
+            background: var(--primary-light);
+            border-radius: var(--radius);
+            border: 1px solid transparent;
+        }
+        .search-summary strong { color: var(--primary); }
+        /* ===== Mobile ===== */
         @media (max-width: 640px) {
+            .header-inner { padding: 14px 16px 10px; }
             .header h1 { font-size: 18px; }
-            .header p { font-size: 12px; }
-            .tab { padding: 7px 13px; font-size: 13px; }
-            .container { padding: 14px 12px 40px; }
-            .search-box { padding: 12px; }
-            .search-input { padding: 10px 12px; font-size: 15px; }
-            .search-btn { padding: 10px 16px; font-size: 15px; }
-            .result-card { padding: 16px; }
-            .result-q { font-size: 16px; }
-            .result-a { font-size: 14px; }
-            .image-grid { grid-template-columns: repeat(2, 1fr); }
+            .header p { font-size: 11.5px; }
+            .robot-icon { width: 38px; height: 38px; font-size: 20px; border-radius: 11px; }
+            .tab { padding: 7px 14px; font-size: 13px; }
+            .container { padding: 16px 14px 50px; }
+            .search-box { padding: 16px; border-radius: 14px; }
+            .search-input { padding: 12px 14px 12px 40px; font-size: 14px; }
+            .search-icon-wrap::before { left: 14px; width: 16px; height: 16px; }
+            .search-btn { padding: 12px 18px; font-size: 14px; }
+            .result-card { padding: 18px; border-radius: 14px; }
+            .result-q { font-size: 15.5px; gap: 8px; }
+            .q-icon { width: 24px; height: 24px; flex-basis: 24px; font-size: 12px; }
+            .result-a { font-size: 14px; padding-left: 32px; }
+            .result-meta { margin-left: 32px; }
+            .image-grid { grid-template-columns: repeat(2, 1fr); margin-left: 32px; gap: 10px; }
+            .image-grid img { height: 100px; border-radius: 10px; }
             .image-grid.single { grid-template-columns: 1fr; }
+            .image-grid.single img { height: 160px; }
+            .empty-state { padding: 40px 16px; }
+            .empty-icon { font-size: 48px; }
+            .empty-title { font-size: 17px; }
+            .lightbox-close { top: 16px; right: 16px; width: 40px; height: 40px; font-size: 24px; }
         }
     </style>
 </head>
@@ -325,10 +580,12 @@
                 搜索范围：<span class="badge" id="currentBadge">全部项目</span>
             </div>
             <div class="search-input-wrap">
-                <input type="text" class="search-input" id="searchInput" placeholder="输入关键词，如：结算银行卡、退款、报错…" autocomplete="off">
+                <div class="search-icon-wrap">
+                    <input type="text" class="search-input" id="searchInput" placeholder="输入关键词，如：结算银行卡、退款、报错…" autocomplete="off">
+                </div>
                 <button class="search-btn" id="searchBtn">搜索</button>
             </div>
-            <div class="search-tips">提示：默认搜索全部项目，点击上方标签可限定在单个项目内搜索。</div>
+            <div class="search-tips">默认搜索全部项目，点击上方标签可限定在单个项目内搜索。</div>
         </div>
 
         <section id="resultArea" aria-live="polite"></section>
@@ -349,6 +606,7 @@
             id: 'p1',
             name: '调研表填写答疑',
             title: '调研表填写答疑',
+            color: '#4f46e5',
             items: [
                 {
                     q: '1、这张调研表是干什么用的？',
@@ -415,6 +673,7 @@
             id: 'p2',
             name: '微信相关问题',
             title: '微信相关问题',
+            color: '#07c160',
             items: [
                 { q: '如何在商户平台修改公司名称？', a: '• 公司名称是该商户的主体名称，需与颁证单位公示信息保持一致，若已在颁证单位（如工商局）进行更名，可自助登录商户平台（https://pay.weixin.qq.com）申请修改主体。\n• 商户平台，点击【账户中心】-->【商户信息】-->【经营证件信息】点击修改；\n• 填写主体信息、法人信息（不支持变更主体）；\n• 确认填写信息无误后，点击提交等待审核。\n注：若审核驳回，点击修改查看具体驳回原因，调整后再重新提交审核。' },
                 { q: '如何在商户平台修改客服电话？', a: '超级管理员登录微信支付商户平台（https://pay.weixin.qq.com/）-->【账户中心】-->【商户信息】-->【经营信息】-->【修改】，找到客服电话信息，点击【更改】，转入新的客服电话，点击【号码验证】，系统会致电给新的客服电话，请注意接听，并按语音提示核实修改，商户平台会出现弹窗，提示修改成功。' },
@@ -433,7 +692,7 @@
                 { q: '16、微信提现有哪些方式？怎么开通？', a: '提现作为资金流转基础功能，为商户提供将资金从商户平台提现至商户号关联银行卡的能力，分为自动提现和手动提现。自动提现为系统自动执行，提现金额为指定发起日的前一日日终可用余额减留存额；手动提现由商户在商户平台手动发起，提现金额由商户自行填写，注：手动提现仅支持新资金流模式商户发起。\n\n【自动提现】\n超级管理员账号登录【商户平台】-->【产品中心】-->【自动提现】，点击“申请开通”；\n或超级管理员登录【商家助手小程序】-->【资金管理】-->【提现管理】。\n\n【手动提现】（仅支持新资金流结算模式的商户）\n交易中心 --> 资金管理 -->提现/转出 --> 在收款账户选择银行卡，页面会显示当前账户余额。' },
                 { q: '17、微信提现是否可以提现到非商户号绑定的银行卡？', a: '不可以，资金仅支持提现到本商户号绑定的结算银行卡。' },
                 { q: '18、微信提现是否收费？', a: '资金提现到银行卡免费。' },
-                { q: '19、微信结算提现失败后，资金去哪里了？', a: '1）即时结算模式：提现失败资金在基本户，商户确认好结算账号无异常以后，手动发起失败资金对应数额的提现；\n2）非即时结算模式：由于您的结算账号信息有误，请修改结算信息为正确并确保可正常入账，再使用电脑打开链接：pay.weixin.qq.com/index.php/core/cashmanage/querycbalance，使用超级管理员权限登录对应商户号，将资金全部转出至可用余额，转出后手动提现可用余额内的资金。\n注：访问链接提现时如有报错“未知错误，请联系管理员！”，请先访问页面“交易中心 --> 资金管理 --> 充值”，再重新进入该链接操作即可。' },
+                { q: '19、微信结算提现失败后，资金去哪里了？', a: '1）即时结算模式：提现失败资金在基本户，商户确认好结算账号无异常以后，手动发起失败资金对应数额的提现；\n2）非即时结算模式：由于您的结算账号信息有误，请修改结算信息为正确且确保可正常入账，再使用电脑打开链接：pay.weixin.qq.com/index.php/core/cashmanage/querycbalance，使用超级管理员权限登录对应商户号，将资金全部转出至可用余额，转出后手动提现可用余额内的资金。\n注：访问链接提现时如有报错“未知错误，请联系管理员！”，请先访问页面“交易中心 --> 资金管理 --> 充值”，再重新进入该链接操作即可。' },
                 { q: '20、微信支付是否能关闭自动提现？', a: '基于合规要求暂不支持关闭自动提现，但可通过设置提现周期（按日/按周/按月）或留存额来控制实际提现频率与金额。设置方法：使用超管微信进入微信支付商家助手小程序 --> 资金管理 --> 提现管理进行设置。' },
                 { q: '21、如何申请手续费发票？', a: '使用超级管理员账号登录商户平台，点击【账户中心】-->【账户设置】-->【发票信息】-->【发票配置】，填写发票信息，可根据实际情况，选择发票类型（增值税专用发票/普通发票）发票介质（纸质版/电子版），提交成功即申请成功。腾讯会在次月开始按月开票，无需每月提交申请。' },
                 { q: '22、如何暂停或恢复开票？', a: '若暂时无需开票，超管登录商家平台，点击【账户中心】-->【账户设置】-->【发票信息】，申请暂停/开启。' },
@@ -457,6 +716,7 @@
             id: 'p3',
             name: '支付宝相关问题',
             title: '支付宝相关问题',
+            color: '#1677ff',
             items: [
                 { q: '1、如何注册支付宝账号？', a: '参考官方文档，自行完成支付宝账户的注册和实名认证流程，步骤如下：https://cshall.alipay.com/enterprise/knowledgeDetail.htm?knowledgeId=201602847673' },
                 { q: '2、支付宝如何创建应用？', a: '登录开放平台（open.alipay.com）-->【控制台】-->【网页/移动应用】-->【创建网页/移动应用】--> 输入自定义名称、商家账号、图标 --> 选择【网页应用】-->【立即创建】' },
@@ -482,11 +742,12 @@
             id: 'p4',
             name: '报错解答',
             title: '报错解答',
+            color: '#ef4444',
             items: [
                 { q: '微信提示【涉嫌小程序交易异常】', a: '可通过商户号超级管理员通过微信进入【微信支付商家助手】小程序，点击【风险处理】，找到【涉嫌小程序交易异常】模块，按照申诉模版填写对应的资料，通过审核后即可完成申诉。', images: ['p4_0.png'] },
-                { q: '微信提示【此商家的收款功能已被限制，暂无法支付。商家可登录微信商户平台/微信支付商家助手小程序查看原因和解决方案（10008）】', a: '原因：长期未交易，交易时系统提示其限制支付功能\n• 商户号超级管理员通过“微信支付商家助手”公众号，点击“我的商家”；或小程序搜索“微信支付商家助手”关键字进入“微信支付商家助手”小程序。\n• 进入商家助手小程序主界面，点击“风险处理”，进入“违约处理详情”页。点击【无交易商户未确认开户意愿】\n• 点击“去处理”，在跳转的页面中点击方框中的“确认商户身份”。微信支付后台会发起商户身份信息核实流程，流程审核通过后，便可解脱无交易的处罚。\n注：发起“确认商户身份”的流程时，请确保商户的主体资料最新且有效，否则解脱可能会失败。商户需提交最新有效的主体资料，完成资料修改流程后重新进行上述步骤。', images: ['p4_1.png'] },
+                { q: '微信提示【此商家的收款功能已被限制，暂无法支付。商家可登录微信商户平台/微信支付商家助手小程序查看原因和解决方案（10008）】', a: '原因：长期未交易，交易时系统提示其限制支付功能\n• 商户号超级管理员通过"微信支付商家助手"公众号，点击"我的商家"；或小程序搜索"微信支付商家助手"关键字进入"微信支付商家助手"小程序。\n• 进入商家助手小程序主界面，点击"风险处理"，进入"违约处理详情"页。点击【无交易商户未确认开户意愿】\n• 点击"去处理"，在跳转的页面中点击方框中的"确认商户身份"。微信支付后台会发起商户身份信息核实流程，流程审核通过后，便可解脱无交易的处罚。\n注：发起"确认商户身份"的流程时，请确保商户的主体资料最新且有效，否则解脱可能会失败。商户需提交最新有效的主体资料，完成资料修改流程后重新进行上述步骤。', images: ['p4_1.png'] },
                 { q: '微信提示【涉及交易异常】', a: '【微信支付商家助手】小程序 --> 业务受限处理 --> 点击对应功能限制记录 --> 去处理，根据页面提示操作。', images: ['p4_2.png'] },
-                { q: '微信提示【交易停滞】', a: '• 商家平台处理方法：登录pay.weixin.qq.com --> 账户中心 --> 违约记录 --> 商户管理记录 --> 点击“交易停滞”单据，点击“申请解除限制”，根据页面提示进行申诉，并在7个工作日内留意审核结果；\n• 小程序处理方法：“微信支付商家助手”小程序 --> “风险处理”点击“交易停滞”单据进行申诉操作，并在7个工作内留意审核结果。', images: ['p4_3.png'] },
+                { q: '微信提示【交易停滞】', a: '• 商家平台处理方法：登录pay.weixin.qq.com --> 账户中心 --> 违约记录 --> 商户管理记录 --> 点击"交易停滞"单据，点击"申请解除限制"，根据页面提示进行申诉，并在7个工作日内留意审核结果；\n• 小程序处理方法："微信支付商家助手"小程序 --> "风险处理"点击"交易停滞"单据进行申诉操作，并在7个工作内留意审核结果。', images: ['p4_3.png'] },
                 { q: '微信提示【Failed(sub_mch_id与sub_appid不匹配 | INVALID_REQUEST)】', a: '原因：公众号/小程序主体与商户号主体不一致。\n解决方法：先确认是否已将正确的公众号/小程序名称和APPID提供给O2O部门进行绑定，如已绑定按下列流程操作：\n1、超管登录微信商户平台（https://pay.weixin.qq.com），同时打开网页（https://pay.weixin.qq.com/index.php/extend/pay_setting/mch#/mchlist），进入【服务商模式账号关联】-->点击【发起】-->【确定】，按照提示完成操作；\n2、公众号/小程序超管登录公众平台（https://mp.weixin.qq.com）-->【支付与交易】-->【微信支付】-->【代关联商户号（服务商模式）】--【确认】。', images: ['p4_4.png'] },
                 { q: '支付宝提示【Failed（应用未上线）isv.not-online-app | Insufficient Conditions | 40003】', a: '原因：新建应用未通过审核。\n解决方法：超管登录支付宝开放平台（open.alipay.com) -->【控制台】--> 查看新建应用是否审核通过，显示已上线。如未通过查看原因重新提交审核。', images: ['p4_5.png'] },
                 { q: '支付宝提示【Failed商户协议状态非正常状态】', a: '原因：1）当面付/JSAPI未开通或状态异常；2）该支付宝账户长时间没有使用。\n解决方法：\n1）超管登录支付宝商家平台（b.alipay.com) -->【产品中心】--> 查看【当面付】/【JSAPI】是否开通且正常状态；\n2）超管登录支付宝商家平台（b.alipay.com）右上角消息中心，查看相关通知，并进行恢复；没有相关通知，可通过以下链接进行激活：\n电脑端：https://rccust.alipay.com/disposal/reactive?taskCode=ace3a0703aa550add54a8296f9963978\n手机端：https://render.alipay.com/p/w/mix-h5/inactive-merchants.html?taskCode=ace3a0703aa550add54a8296f9963978', images: ['p4_6.png'] },
@@ -532,13 +793,9 @@
 
         let score = 0;
 
-        // 问题完全包含查询 -> 高权重
         if (qLower.includes(query.toLowerCase())) score += 50;
-
-        // 查询完全包含问题 -> 高权重
         if (query.toLowerCase().includes(qLower)) score += 40;
 
-        // 词匹配
         for (const t of qTokens) {
             if (t.length === 1) {
                 if (haystack.includes(t)) score += 1;
@@ -551,14 +808,12 @@
             }
         }
 
-        // 字符匹配（用于中文单字覆盖）
         let charHit = 0;
         for (const ch of qChars) {
             if (haystack.includes(ch)) charHit++;
         }
         if (qChars.length > 0) score += (charHit / qChars.length) * 10;
 
-        // 连续子串匹配
         for (let len = Math.min(6, query.length); len >= 2; len--) {
             for (let i = 0; i <= query.length - len; i++) {
                 const sub = query.slice(i, i + len).toLowerCase();
@@ -605,7 +860,6 @@
     function showProjectIntro() {
         const area = document.getElementById('resultArea');
         if (currentProjectIndex === -1) {
-            // 全部项目：展示汇总和各模块精选
             const allSuggestions = [];
             projects.forEach(p => {
                 p.items.slice(0, 3).forEach(it => {
@@ -616,11 +870,12 @@
                 <div class="empty-state">
                     <div class="empty-icon">🤖</div>
                     <div class="empty-title">智能问答机器人</div>
-                    <p>共覆盖 <strong>${projects.length}</strong> 个项目、<strong>${totalItems}</strong> 条问答。输入关键词，系统将在全部项目中为您匹配最相关的答案。</p>
-                    <div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:12px;">
-                        ${projects.map(p => `<span style="background:var(--card);border:1px solid var(--border);padding:6px 12px;border-radius:16px;font-size:13px;">${p.name}（${p.items.length}条）</span>`).join('')}
+                    <p>共覆盖 <strong>${projects.length}</strong> 个项目、<strong>${totalItems}</strong> 条问答</p>
+                    <p style="font-size:13px;color:var(--text-tertiary);">输入关键词，系统将在全部项目中为您匹配最相关的答案</p>
+                    <div class="project-tags">
+                        ${projects.map(p => `<span class="project-tag"><span class="dot" style="background:${p.color}"></span>${p.name}（${p.items.length}条）</span>`).join('')}
                     </div>
-                    <div class="suggestion-list" style="margin-top:20px;">
+                    <div class="suggestion-list">
                         ${allSuggestions.slice(0, 12).map(s => `<span class="suggestion-chip" title="${s.project.name}">【${s.project.name}】${escapeHtml(s.text.length > 16 ? s.text.slice(0, 16) + '…' : s.text)}</span>`).join('')}
                     </div>
                 </div>
@@ -632,7 +887,8 @@
                 <div class="empty-state">
                     <div class="empty-icon">📚</div>
                     <div class="empty-title">${p.name}</div>
-                    <p>请输入关键词或问题，系统将在「${p.name}」的 ${p.items.length} 条内容中为您匹配答案。</p>
+                    <p>共 <strong>${p.items.length}</strong> 条问答内容</p>
+                    <p style="font-size:13px;color:var(--text-tertiary);">输入关键词或问题，系统将为您匹配答案</p>
                     <div class="suggestion-list">
                         ${suggestions.map(s => `<span class="suggestion-chip">${escapeHtml(s.length > 20 ? s.slice(0, 20) + '…' : s)}</span>`).join('')}
                     </div>
@@ -653,7 +909,6 @@
 
         let results;
         if (currentProjectIndex === -1) {
-            // 全局搜索：在所有项目中匹配
             results = [];
             projects.forEach(project => {
                 project.items.forEach(item => {
@@ -681,13 +936,12 @@
                     <div class="empty-icon">🔍</div>
                     <div class="empty-title">未找到匹配结果</div>
                     <p>在「${scopeLabel}」中没有找到与"${escapeHtml(query)}"相关的内容。</p>
-                    <p>请尝试更换关键词后重试。</p>
+                    <p style="font-size:13px;color:var(--text-tertiary);">请尝试更换关键词后重试。</p>
                 </div>
             `;
             return;
         }
 
-        // 统计来自哪些项目
         const projectCounts = {};
         results.forEach(r => {
             projectCounts[r.project.name] = (projectCounts[r.project.name] || 0) + 1;
@@ -695,7 +949,7 @@
         const summaryParts = Object.entries(projectCounts).map(([k, v]) => `${k}(${v}条)`).join('、');
 
         area.innerHTML = `
-            <div style="font-size:13px;color:var(--text-secondary);margin-bottom:12px;">
+            <div class="search-summary">
                 在「${scopeLabel}」中搜到 <strong>${results.length}</strong> 条匹配结果（${summaryParts}）
             </div>
             ${results.map(r => {
@@ -711,7 +965,7 @@
                         <div class="result-a">${linkify(r.item.a)}</div>
                         ${imgHtml}
                         <div class="result-meta">
-                            <span>来源：${r.project.name}</span>
+                            <span class="source">${r.project.name}</span>
                             <span class="score">相关度 ${Math.min(99, Math.round(r.score))}</span>
                         </div>
                     </article>
