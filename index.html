@@ -268,6 +268,7 @@
             padding: 22px 24px;
             box-shadow: var(--shadow);
             border: 1px solid var(--border);
+            border-left: 4px solid var(--card-accent, var(--primary));
             transition: all 0.25s cubic-bezier(0.4,0,0.2,1);
             animation: slideUp 0.4s cubic-bezier(0.4,0,0.2,1) both;
             position: relative;
@@ -278,17 +279,17 @@
             position: absolute;
             left: 0; top: 0; bottom: 0;
             width: 4px;
-            background: var(--primary);
-            opacity: 0;
-            transition: opacity 0.25s;
+            background: var(--card-accent, var(--primary));
+            opacity: 1;
+            transition: width 0.25s, opacity 0.25s;
         }
         .result-card:hover {
             box-shadow: var(--shadow-xl);
-            border-color: var(--border-hover);
+            border-color: var(--card-accent, var(--border-hover));
             background: var(--card-hover);
             transform: translateY(-2px);
         }
-        .result-card:hover::before { opacity: 1; }
+        .result-card:hover::before { width: 6px; }
         @keyframes slideUp {
             from { opacity: 0; transform: translateY(16px); }
             to { opacity: 1; transform: translateY(0); }
@@ -313,12 +314,12 @@
         .q-icon {
             flex: 0 0 26px;
             width: 26px; height: 26px;
-            background: var(--primary);
+            background: var(--card-accent, var(--primary));
             color: white;
             border-radius: 8px;
             display: flex; align-items: center; justify-content: center;
             font-size: 13px; font-weight: 700;
-            box-shadow: 0 2px 6px var(--primary-glow);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.12);
         }
         .result-a {
             color: var(--text-secondary);
@@ -328,10 +329,10 @@
             padding-left: 36px;
         }
         .result-a a {
-            color: var(--primary);
+            color: var(--card-accent, var(--primary));
             word-break: break-all;
             text-decoration: none;
-            border-bottom: 1px dashed var(--primary);
+            border-bottom: 1px dashed var(--card-accent, var(--primary));
             transition: border-style 0.2s;
         }
         .result-a a:hover { border-bottom-style: solid; }
@@ -349,12 +350,17 @@
         .result-meta .source {
             display: inline-flex;
             align-items: center;
-            gap: 5px;
+            gap: 6px;
         }
-        .result-meta .source::before { content: '\1F4C1'; font-size: 12px; }
+        .result-meta .source .source-dot {
+            width: 8px; height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            flex-shrink: 0;
+        }
         .score {
             font-weight: 600;
-            color: var(--primary);
+            color: var(--card-accent, var(--primary));
             display: inline-flex;
             align-items: center;
             gap: 4px;
@@ -380,7 +386,7 @@
         .image-grid img:hover {
             transform: scale(1.04);
             box-shadow: var(--shadow-lg);
-            border-color: var(--primary);
+            border-color: var(--card-accent, var(--primary));
         }
         .image-grid.single { grid-template-columns: minmax(150px, 340px); }
         .image-grid.single img { height: 200px; }
@@ -961,12 +967,12 @@
                     </div>
                 ` : '';
                 return `
-                    <article class="result-card">
+                    <article class="result-card" style="--card-accent: ${r.project.color}">
                         <div class="result-q"><span class="q-icon">Q</span><span>${linkify(r.item.q)}</span></div>
                         <div class="result-a">${linkify(r.item.a)}</div>
                         ${imgHtml}
                         <div class="result-meta">
-                            <span class="source">${r.project.name}</span>
+                            <span class="source"><span class="source-dot" style="background:${r.project.color}"></span>${r.project.name}</span>
                             <span class="score">相关度 ${Math.min(99, Math.round(r.score))}</span>
                         </div>
                     </article>
