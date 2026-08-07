@@ -315,7 +315,7 @@
             flex: 0 0 26px;
             width: 26px; height: 26px;
             background: var(--card-accent, var(--primary));
-            color: white;
+            color: var(--q-text, white);
             border-radius: 8px;
             display: flex; align-items: center; justify-content: center;
             font-size: 13px; font-weight: 700;
@@ -768,7 +768,7 @@
             id: 'p5',
             name: '小程序注册/备案相关问题',
             title: '小程序注册/备案相关问题',
-            color: '#0d9488',
+            color: '#eab308',
             items: [
                 { q: '申请小程序前需准备的资料？', a: '未注册过公众平台/开放平台的邮箱、营业执照、法人身份证、对公账户、300块认证费\n注：超管非法人时，还需要准备超管的身份证、实名认证的微信、授权书（需加盖企业红章）' },
                 { q: '如何注册小程序？', a: '1）登录mp.weixin.qq.com → 右上角【注册】→ 账号类型选【小程序】→ 填未注册过微信体系的邮箱+密码 → 收邮件激活 → 选主体类型（企业/个体户）→ 填资料 → 完成注册\n2）如已有同主体认证过的公众号/服务号，可登录公众号后台 → 【广告与服务】→ 【小程序管理】→【添加】→【快速注册并认证小程序】→ 选择复用资质 → 填写小程序信息 → 登陆邮箱激活 → 绑定小程序管理员 → 小程序注册身份确认 → 完成注册。\n完成注册后，需在网页右上角退出当前账户，重新进入公众平台，登录新申请的小程序，否则会遇到异常报错。\n{{RED}}注：2026年起小程序上线前必须完成ICP备案，且主体信息必须与备案一致{{/RED}}' },
@@ -1009,7 +1009,7 @@
                     </div>
                 ` : '';
                 return `
-                    <article class="result-card" style="--card-accent: ${r.project.color}">
+                    <article class="result-card" style="--card-accent: ${r.project.color}; --q-text: ${r.project.id === 'p5' ? '#1a1a2e' : 'white'}">
                         <div class="result-q"><span class="q-icon">Q</span><span>${linkify(r.item.q)}</span></div>
                         <div class="result-a">${formatAnswer(r.item.a)}</div>
                         ${imgHtml}
