@@ -699,6 +699,37 @@
             font-size: 12px;
             z-index: 2;
         }
+        /* ===== Welcome Toast ===== */
+        .welcome-toast {
+            position: fixed;
+            top: -100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            color: white;
+            padding: 14px 28px;
+            border-radius: 14px;
+            box-shadow: 0 8px 32px rgba(79,70,229,0.35);
+            font-size: 15px;
+            font-weight: 600;
+            z-index: 9999;
+            transition: top 0.5s cubic-bezier(0.34,1.56,0.64,1);
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .welcome-toast.show { top: 24px; }
+        .welcome-toast .toast-icon { font-size: 20px; }
+        .welcome-toast .toast-sub {
+            font-size: 12px;
+            font-weight: 400;
+            opacity: 0.85;
+            margin-top: 2px;
+        }
+        @media (max-width: 600px) {
+            .welcome-toast { font-size: 13px; padding: 12px 20px; white-space: normal; text-align: center; max-width: 90vw; }
+        }
     </style>
 </head>
 <body>
@@ -718,6 +749,15 @@
             </div>
             <button class="login-btn" id="loginBtn">进 入</button>
             <div class="login-error" id="loginError"></div>
+        </div>
+    </div>
+
+    <!-- Welcome Toast -->
+    <div class="welcome-toast" id="welcomeToast">
+        <span class="toast-icon">👋</span>
+        <div>
+            <div id="welcomeMain">欢迎</div>
+            <div class="toast-sub" id="welcomeSub"></div>
         </div>
     </div>
 
@@ -1029,6 +1069,9 @@
         renderTabs();
         updateBadge();
         showProjectIntro();
+
+        // 显示欢迎提示
+        showWelcome(account.label, projects.length, totalItems);
     }
 
     function doLogout() {
@@ -1041,6 +1084,17 @@
         document.getElementById('loginError').textContent = '';
         projects = [];
         totalItems = 0;
+    }
+
+    // ====== 欢迎提示 ======
+    let welcomeTimer = null;
+    function showWelcome(label, projCount, qaCount) {
+        const toast = document.getElementById('welcomeToast');
+        document.getElementById('welcomeMain').textContent = '欢迎，' + label + '！';
+        document.getElementById('welcomeSub').textContent = '可查看 ' + projCount + ' 个项目，共 ' + qaCount + ' 条问答';
+        toast.classList.add('show');
+        if (welcomeTimer) clearTimeout(welcomeTimer);
+        welcomeTimer = setTimeout(() => { toast.classList.remove('show'); }, 3500);
     }
 
     // 登录按钮 & 回车事件
