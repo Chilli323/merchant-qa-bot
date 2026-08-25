@@ -714,7 +714,9 @@
             font-weight: 600;
             z-index: 9999;
             transition: top 0.5s cubic-bezier(0.34,1.56,0.64,1);
-            white-space: nowrap;
+            white-space: normal;
+            max-width: 640px;
+            text-align: left;
             display: flex;
             align-items: center;
             gap: 8px;
@@ -728,7 +730,8 @@
             margin-top: 2px;
         }
         @media (max-width: 600px) {
-            .welcome-toast { font-size: 13px; padding: 12px 20px; white-space: normal; text-align: center; max-width: 90vw; }
+            .welcome-toast { font-size: 13px; padding: 12px 20px; text-align: center; max-width: 90vw; }
+            .welcome-toast .toast-icon { display: none; }
         }
     </style>
 </head>
@@ -1029,9 +1032,14 @@
 
     // ====== 商户权限配置（只需修改这里）======
     const ACCOUNTS = {
-        'admin888':     { password: 'admin888',  label: '管理员',       projects: ['p1','p2','p3','p4','p5'] },
-        'Customer':     { password: 'VIP888',    label: 'Customer',    projects: ['p1','p2','p3','p5'] },
-        'VIP Service':  { password: 'O2O@123',   label: 'VIP Service', projects: ['p1','p4','p5'] }
+        'admin888':     { password: 'admin888',  label: '管理员',       projects: ['p1','p2','p3','p4','p5'], welcome: '欢迎，管理员！' },
+        'Customer':     { password: 'VIP888',    label: 'Customer',    projects: ['p1','p2','p3','p5'], welcome: '欢迎，Customer！' },
+        'VIP Service':  { password: 'O2O@123',   label: 'VIP Service', projects: ['p1','p4','p5'], welcome: '欢迎，VIP Service！' },
+        'Assistant':    { password: 'O2O@666',   label: 'Assistant',   projects: ['p1'], welcome: '您好！我是O2O接入向导，调研表填写疑问，您可以向我提问。' },
+        'Assistant 1':  { password: 'O2O@888',   label: 'Assistant 1', projects: ['p2','p3'], welcome: '您好！我是O2O支付小助手，为您提供支付业务支持，您可以向我提问。' },
+        'Assistant 2':  { password: 'O2O@999',   label: 'Assistant 2', projects: ['p2','p3','p5'], welcome: '您好！我是O2O支付小助手，为您提供支付业务支持，您可以向我提问。' },
+        '排障专员':       { password: 'O2O@123',   label: '排障专员',     projects: ['p4','p5'], welcome: '您好！我是报错诊断小助手，遇到报错问题可以向我提问。' },
+        'Assistant 3':  { password: 'O2O@999',   label: 'Assistant 3', projects: ['p5'], welcome: '您好！我是O2O接入向导，小程序注册和备案疑问，您可以向我提问。' }
     };
     // ====== 配置结束，以下不要改 ======
 
@@ -1071,7 +1079,7 @@
         showProjectIntro();
 
         // 显示欢迎提示
-        showWelcome(account.label, projects.length, totalItems);
+        showWelcome(account, projects.length, totalItems);
     }
 
     function doLogout() {
@@ -1088,13 +1096,13 @@
 
     // ====== 欢迎提示 ======
     let welcomeTimer = null;
-    function showWelcome(label, projCount, qaCount) {
+    function showWelcome(account, projCount, qaCount) {
         const toast = document.getElementById('welcomeToast');
-        document.getElementById('welcomeMain').textContent = '欢迎，' + label + '！';
+        document.getElementById('welcomeMain').textContent = account.welcome || ('欢迎，' + account.label + '！');
         document.getElementById('welcomeSub').textContent = '可查看 ' + projCount + ' 个项目，共 ' + qaCount + ' 条问答';
         toast.classList.add('show');
         if (welcomeTimer) clearTimeout(welcomeTimer);
-        welcomeTimer = setTimeout(() => { toast.classList.remove('show'); }, 3500);
+        welcomeTimer = setTimeout(() => { toast.classList.remove('show'); }, 4500);
     }
 
     // 登录按钮 & 回车事件
