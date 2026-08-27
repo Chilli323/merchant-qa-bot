@@ -793,7 +793,7 @@
             <div class="current-project">
                 搜索范围：<span class="badge" id="currentBadge">全部项目</span>
             </div>
-            <div class="hotline-tip">📞 如遇支付问题，可拨打客服热线 <strong>400-8200-188</strong>，找石基支付</div>
+            <div class="hotline-tip" id="hotlineTip" style="display:none;">📞 如遇支付问题，可拨打客服热线 <strong>400-8200-188</strong>，找石基支付</div>
             <div class="search-input-wrap">
                 <div class="search-icon-wrap">
                     <input type="text" class="search-input" id="searchInput" placeholder="输入关键词，如：结算银行卡、退款、报错…" autocomplete="off">
@@ -1237,11 +1237,15 @@
 
     function updateBadge() {
         const badge = document.getElementById('currentBadge');
+        const hotline = document.getElementById('hotlineTip');
         if (currentProjectIndex === -1) {
             badge.textContent = '全部项目（' + projects.length + '个项目，共 ' + totalItems + ' 条问答）';
+            hotline.style.display = 'none';
         } else {
             const p = projects[currentProjectIndex];
             badge.textContent = p.name + '（' + p.items.length + ' 条问答）';
+            // 热线提示仅在【石基支付接入问题】项目下显示
+            hotline.style.display = (p.id === 'p6') ? '' : 'none';
         }
     }
 
