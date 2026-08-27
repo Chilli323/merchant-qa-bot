@@ -1064,14 +1064,21 @@
         'Assistant 2':  { password: 'O2O@999',   label: 'Assistant 2', projects: ['p2','p3','p5'], welcome: '您好！我是O2O支付小助手，为您提供支付业务支持，您可以向我提问。' },
         '排障专员':       { password: 'O2O@123',   label: '排障专员',     projects: ['p4','p5'], welcome: '您好！我是报错诊断小助手，遇到报错问题可以向我提问。' },
         'Assistant 3':  { password: 'O2O@999',   label: 'Assistant 3', projects: ['p5'], welcome: '您好！我是O2O接入向导，小程序注册和备案疑问，您可以向我提问。' },
-        'Assistant 4':  { password: 'O2O Payment', label: 'Assistant 4', projects: ['p6'], welcome: '您好！我是O2O接入向导，石基支付填写疑问，您可以向我提问。' }
+        'Assistant4':   { password: 'O2O@Payment', label: 'Assistant4', projects: ['p6'], welcome: '您好！我是O2O接入向导，石基支付填写疑问，您可以向我提问。' }
     };
     // ====== 配置结束，以下不要改 ======
 
     // ====== 登录逻辑 ======
+    // 规范化字符串：全角空格/不间断空格/零宽字符统一转为半角空格，再去首尾空格
+    function normalizeStr(s) {
+        return (s || '').replace(/[\u3000\u00A0\u200B\u200C\u200D\uFEFF]/g, ' ').trim();
+    }
+
     function doLogin() {
-        const name = document.getElementById('loginName').value.trim();
-        const pass = document.getElementById('loginPass').value.trim();
+        const rawName = document.getElementById('loginName').value;
+        const rawPass = document.getElementById('loginPass').value;
+        const name = normalizeStr(rawName);
+        const pass = normalizeStr(rawPass);
         const errEl = document.getElementById('loginError');
 
         if (!name || !pass) {
@@ -1079,8 +1086,10 @@
             return;
         }
 
-        const account = ACCOUNTS[name];
-        if (!account || account.password !== pass) {
+        // 容错匹配：账号名和密码均做规范化后再比对（兼容复制粘贴带入的全角空格等）
+        const key = Object.keys(ACCOUNTS).find(k => normalizeStr(k) === name);
+        const account = key ? ACCOUNTS[key] : null;
+        if (!account || normalizeStr(account.password) !== pass) {
             errEl.textContent = '商户名或密码不正确，请重试';
             return;
         }
@@ -1397,9 +1406,10 @@
     // ====== 初始化：检查登录状态 ======
     (function() {
         const savedName = sessionStorage.getItem('qa_login');
-        if (savedName && ACCOUNTS[savedName]) {
+        const savedKey = savedName ? Object.keys(ACCOUNTS).find(k => normalizeStr(k) === normalizeStr(savedName)) : null;
+        if (savedName && savedKey) {
             // 自动恢复登录
-            const account = ACCOUNTS[savedName];
+            const account = ACCOUNTS[savedKey];
             projects = ALL_PROJECTS.filter(p => account.projects.includes(p.id));
             totalItems = projects.reduce((sum, p) => sum + p.items.length, 0);
             document.getElementById('loginOverlay').classList.add('hidden');
