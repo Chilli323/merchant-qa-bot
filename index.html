@@ -1357,6 +1357,25 @@
         }
     }
 
+    function renderDownloadSection(p) {
+        const dlList = (p.downloads || []).map((d, i) => `
+            <a class="download-item" href="${d.file}" download="${d.name}" title="${d.name}">
+                <span class="download-icon">${d.icon || '📄'}</span>
+                <span class="download-info">
+                    <span class="download-name">${d.name}</span>
+                    ${d.desc ? `<span class="download-desc">${escapeHtml(d.desc)}</span>` : ''}
+                </span>
+                <span class="download-btn">下载</span>
+            </a>`).join('');
+        if (!dlList) return '';
+        return `
+            <div class="download-section">
+                <div class="download-title">📥 资料下载</div>
+                <div class="download-subtitle">点击即可下载所需文档/表格</div>
+                <div class="download-list">${dlList}</div>
+            </div>`;
+    }
+
     function showProjectIntro() {
         const area = document.getElementById('resultArea');
         if (currentProjectIndex === -1) {
@@ -1383,22 +1402,9 @@
         } else {
             const p = projects[currentProjectIndex];
             const suggestions = p.items.slice(0, 8).map(it => it.q.replace(/^\d+、/, '').replace(/^(微信|支付宝)提示【?/, ''));
-            const dlList = (p.downloads || []).map((d, i) => `
-                <a class="download-item" href="${d.file}" download="${d.name}" title="${d.name}">
-                    <span class="download-icon">${d.icon || '📄'}</span>
-                    <span class="download-info">
-                        <span class="download-name">${d.name}</span>
-                        ${d.desc ? `<span class="download-desc">${escapeHtml(d.desc)}</span>` : ''}
-                    </span>
-                    <span class="download-btn">下载</span>
-                </a>`).join('');
+            const dlSection = renderDownloadSection(p);
             area.innerHTML = `
-                ${(p.downloads || []).length ? `
-                <div class="download-section">
-                    <div class="download-title">📥 资料下载</div>
-                    <div class="download-subtitle">点击即可下载所需文档/表格</div>
-                    <div class="download-list">${dlList}</div>
-                </div>` : ''}
+                ${dlSection}
                 <div class="empty-state">
                     <div class="empty-icon">📚</div>
                     <div class="empty-title">${p.name}</div>
@@ -1447,6 +1453,7 @@
 
         if (results.length === 0) {
             area.innerHTML = `
+                ${currentProjectIndex !== -1 ? renderDownloadSection(projects[currentProjectIndex]) : ''}
                 <div class="empty-state">
                     <div class="empty-icon">🔍</div>
                     <div class="empty-title">未找到匹配结果</div>
@@ -1464,6 +1471,7 @@
         const summaryParts = Object.entries(projectCounts).map(([k, v]) => `${k}(${v}条)`).join('、');
 
         area.innerHTML = `
+            ${currentProjectIndex !== -1 ? renderDownloadSection(projects[currentProjectIndex]) : ''}
             <div class="search-summary">
                 在「${scopeLabel}」中搜到 <strong>${results.length}</strong> 条匹配结果（${summaryParts}）
             </div>
