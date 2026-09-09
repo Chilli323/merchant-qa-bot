@@ -490,6 +490,28 @@
         }
         .image-grid.single { grid-template-columns: minmax(150px, 340px); }
         .image-grid.single img { height: 200px; }
+        /* ===== Auto-fit inline image ===== */
+        .image-auto {
+            margin: 10px 0 4px 36px;
+            max-width: 100%;
+        }
+        .image-auto img {
+            display: block;
+            width: auto;
+            max-width: 100%;
+            max-height: 420px;
+            height: auto;
+            object-fit: contain;
+            border-radius: var(--radius);
+            cursor: pointer;
+            border: 1px solid var(--border);
+            transition: all 0.25s;
+            background: var(--bg-subtle);
+        }
+        .image-auto img:hover {
+            box-shadow: var(--shadow-lg);
+            border-color: var(--card-accent, var(--primary));
+        }
         /* ===== Empty State ===== */
         .empty-state {
             text-align: center;
@@ -659,6 +681,8 @@
             .image-grid img { height: 100px; border-radius: 10px; }
             .image-grid.single { grid-template-columns: 1fr; }
             .image-grid.single img { height: 160px; }
+            .image-auto { margin-left: 32px; }
+            .image-auto img { max-height: 300px; }
             .empty-state { padding: 40px 16px; }
             .empty-icon { font-size: 48px; }
             .empty-title { font-size: 17px; }
@@ -1190,7 +1214,12 @@
                 { q: '结算信息如何填写？', a: '结算银行名称需准确，精准到**支行，（如中国工商银行深圳高新园支行）与提供的结算账户证明材料保持一致。\n注：企业主体必须进对公账户，个体工商户可选择进对公或法人个人账户。', images: ['p6_q3.png'] },
                 { q: '管理员信息如何填写？', a: '商户管理员为指定的商户联系人。手机号和邮箱会接收石基支付提供的对账平台的账号和密码，管理员有对账、开票、操作资金退款等权限，一般建议财务负责人。', images: ['p6_q4.png'] },
                 { q: '小程序信息如何填写？', a: '如上线扫码点餐时，必须提供小程序相关信息（小程序名称、APPID）且小程序主体需与结算主体名称一致。\n小程序APPID获取路径：mp.weixin.qq.com --> 左下角头像处 --> 账号设置 --> 账号信息（WX开头的一串字符）', images: ['p6_q5.png'] },
-                { q: '手续费开票信息如何填写？', a: '手续费是按每笔交易金额进行实时扣除，系统每月会自动给商户开具发票，商户可登录商户后台进行下载，需按结算银行主体如实填写。\n注：1）如果分公司没有独立核算能力，要求提供总公司和分公司的开票说明。\n2）如需开专票，需提供相关证明材料，如一般纳税人资格登记表、税务登记及一般纳税人资格信息、国家税务局电子税务局的一般纳税人资格查询截图等，任意一种即可。', images: ['p6_q6.png'] }
+                { q: '手续费开票信息如何填写？', a: '手续费是按每笔交易金额进行实时扣除，系统每月会自动给商户开具发票，商户可登录商户后台进行下载，需按结算银行主体如实填写。\n注：1）如果分公司没有独立核算能力，要求提供总公司和分公司的开票说明。\n2）如需开专票，需提供相关证明材料，如一般纳税人资格登记表、税务登记及一般纳税人资格信息、国家税务局电子税务局的一般纳税人资格查询截图等，任意一种即可。', images: ['p6_q6.png'] },
+                { q: '石基支付如何修改结算信息？', a: '超管登录石基支付后台（https://b.minpayment.com/new/）--【商户信息管理】--【基本信息】--【结算信息】--【修改】，输入支付密码确认，填写新的结算银行信息，确认信息提交。\n{{RED}}注：需额外提交一份新结算信息的银行回单给O2O部门进行上传{{/RED}}' },
+                { q: '石基支付平台如何新增操作员？', a: '1、超管登录石基支付后台（https://b.minpayment.com/new/）--【商户信息管理】--【操作员管理】--【新增】（可根据具体需求添加不同角色的操作人员）\n2、填写操作员姓名、手机号、管理员手机验证码\n3、新增完成后，选中操作员，点击右侧操作栏授权，给操作员添加权限后即可登录\n{{RED}}注：新增操作员默认开通退款复核权限，即操作员发起退款需管理员审核，如无需复核关闭即可。{{/RED}}' },
+                { q: '如何修改登录密码？', a: '登录石基支付后台（https://b.minpayment.com/new/）--【安全中心】--【修改登录密码】，输入原密码、新密码、确认新密码--【确认】' },
+                { q: '如何修改支付密码？', a: '登录石基支付后台（https://b.minpayment.com/new/）--【安全中心】--【修改支付密码】，输入原密码、新密码、确认新密码--【确认】' },
+                { q: '如何登录石基支付商户后台？', a: '1、超管 / 操作员登录石基支付后台（https://b.minpayment.com/new/）输入账号名、登录密码、短信验证码进行登录；\n2、超管 / 操作员扫码登录，用实名认证的微信扫码绑定手机号，进行登录\n{{IMG:p6_q7.png}}' }
             ],
             downloads: [
                 {
@@ -1338,7 +1367,7 @@
                    .replace(/\{\{\/RED\}\}/g, '</span>');
         // Inline image markers: {{IMG:filename}}
         html = html.replace(/\{\{IMG:([a-zA-Z0-9_.]+)\}\}/g, (match, filename) => {
-            return `<div class="image-grid single" style="margin-top:10px;margin-bottom:4px;"><img src="images/${filename}" alt="参考图片" loading="lazy" data-full="images/${filename}"></div>`;
+            return `<div class="image-auto"><img src="images/${filename}" alt="参考图片" loading="lazy" data-full="images/${filename}"></div>`;
         });
         return html;
     }
@@ -1572,7 +1601,7 @@
             }).join('')}
         `;
 
-        area.querySelectorAll('.image-grid img').forEach(img => {
+        area.querySelectorAll('.image-grid img, .image-auto img').forEach(img => {
             img.addEventListener('click', () => openLightbox(img.dataset.full));
         });
     }
